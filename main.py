@@ -6,7 +6,7 @@ if __name__ == '__main__':
     board = tilewe.Board(4) 
     print(board) 
 
-    while not board.state.finished: 
+    while not board.finished: 
         moves = board.get_legal_moves(unique=True) 
         move = random.choice(moves) 
 
