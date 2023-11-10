@@ -2,7 +2,7 @@ import random
 import tilewe
 import signal
 from typing import Callable
-from multiprocessing import Pool
+from multiprocessing import Pool, TimeoutError
 
 #from community import random_bot, tile_size_bot
 #from michael import Bot as michael_bot
@@ -10,7 +10,7 @@ from multiprocessing import Pool
 #from nik import Bot as nik_bot
 
 tilewe.print_color = False
-VERBOSE_LOGS = False
+VERBOSE_LOGS = True
 
 # Runs a single game with the specified bots in their given player order
 # Author: Michael
@@ -29,7 +29,8 @@ def play_game(
 
     # Play game
     if VERBOSE_LOGS: print(f"Starting Game #{id}")
-    while not board.finished: 
+    while not board.finished:
+        # Execute the correct bot based on current player
         if (board.current_player == tilewe.COLORS[0]):
             move = B1(board, tilewe.COLORS[0])
         elif (board.current_player == tilewe.COLORS[1]):
@@ -58,24 +59,36 @@ def multiprocessed_games(
     game_count: int = 100,
     pool_size: int = 8
 ) -> None:
-    # Play games simultaneously
+    # Initialize bot data
     boards = []
     bots = [i for i in [B1, B2, B3, B4] if i is not None]
     player_count = len(bots)
 
+    # Play games simultaneously
     with Pool(pool_size, initializer=signal.signal, initargs=(signal.SIGINT, signal.SIG_IGN)) as p:
         try:
+            # Build the arg lists for concurrent games to run
             args = []
             for i in range(0, game_count):
                 random.shuffle(bots)
                 args.append([i, *(bots + ([None] * (4 - len(bots))))])
-            boards = p.starmap(play_game, args)
+            
+            # Run the games asynchronously
+            async_result = p.starmap_async(play_game, args)
+            while True:
+                # Infinite loop checking for results once per second
+                # to allow for keyboard interrupts during play
+                try:
+                    boards = async_result.get(1)
+                    break
+                except TimeoutError:
+                    pass
         except KeyboardInterrupt:
             print("Caught KeyboardInterrupt, terminating workers")
             p.terminate()
             return
     
-    # Record data
+    # Compute result data
     pos_wins = [0, 0, 0, 0]
     pos_scores = [0, 0, 0, 0]
     player_wins = [0, 0, 0, 0]
@@ -99,34 +112,39 @@ def multiprocessed_games(
             pos_scores[player] += board._players[player].score
             player_scores[botPos] += board._players[player].score
 
-    # Output data
+    # Output result data
     for player in range(0, player_count):
         print(f"Position {player}: {pos_wins[player]}/{game_count} wins, {pos_scores[player]} total score, avg score {round(pos_scores[player]/game_count, 3)}")
     for player in range(0, player_count):
         print(f"Player {identifiers[player]}: {player_wins[player]}/{game_count} wins, {player_scores[player]} total score, avg score {round(player_scores[player]/game_count, 3)}")
 
-def piece_size(piece: tilewe.Piece) -> int: len(tilewe._PIECES[piece].rotations[0].tiles)
+# Helper to return the tilesize of a given piece
+def piece_size(piece: tilewe.Piece) -> int: return len(tilewe._PIECES[piece].rotations[0].tiles)
 
+# Simple bot that returns a random move from all legal moves
 # Author: Nik
 def random_bot(board: tilewe.Board, player: tilewe.Color) -> tilewe.Move:
     moves = board.generate_legal_moves(unique=True) 
     return random.choice(moves) 
 
+# Simple bot that returns a random move from all legal moves using only the largest possible pieces by tilesize
 # Author: Michael
 def tile_size_bot(board: tilewe.Board, player: tilewe.Color) -> tilewe.Move:
     moves = sorted(board.generate_legal_moves(unique=True), key=lambda x: -piece_size(x.piece))
     largest_size = len(tilewe._PIECES[max(moves, key=lambda x: piece_size(x.piece)).piece].rotations[0].tiles)
-    largest_count = sum(1 for x in moves if piece_size(x.piece) == largest_size)
+    largest_count = sum([1 for x in moves if piece_size(x.piece) == largest_size])
     return random.choice(moves[:largest_count])
 
-# Define Bots here. If less players desired, replace with None in the multiprocessedGames call.
+# Define players here. If less players desired, replace with None in the multiprocessedGames call.
 def player1(board: tilewe.Board, player: tilewe.Color) -> tilewe.Move: return tile_size_bot(board, player)
 def player2(board: tilewe.Board, player: tilewe.Color) -> tilewe.Move: return random_bot(board, player)
 def player3(board: tilewe.Board, player: tilewe.Color) -> tilewe.Move: return tile_size_bot(board, player)
 def player4(board: tilewe.Board, player: tilewe.Color) -> tilewe.Move: return random_bot(board, player)
 
 if __name__ == '__main__': 
-    GAME_COUNT = 1000
+    # Define game count and multiprocessing thread count here.
+    # Optionally remove players (other than player1) and replace with None
+    GAME_COUNT = 100
     THREAD_COUNT = 8
     multiprocessed_games(
         player1,
