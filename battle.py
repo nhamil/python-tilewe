@@ -115,9 +115,9 @@ def random_bot(board: tilewe.Board, player: tilewe.Color) -> tilewe.Move:
 # Author: Michael
 def tile_size_bot(board: tilewe.Board, player: tilewe.Color) -> tilewe.Move:
     moves = sorted(board.generate_legal_moves(unique=True), key=lambda x: -piece_size(x.piece))
-    largestSize = len(tilewe._PIECES[max(moves, key=lambda x: piece_size(x.piece)).piece].rotations[0].tiles)
-    largestCount = sum(1 for x in moves if piece_size(x.piece) == largestSize)
-    return random.choice(moves[:largestCount])
+    largest_size = len(tilewe._PIECES[max(moves, key=lambda x: piece_size(x.piece)).piece].rotations[0].tiles)
+    largest_count = sum(1 for x in moves if piece_size(x.piece) == largest_size)
+    return random.choice(moves[:largest_count])
 
 # Define Bots here. If less players desired, replace with None in the multiprocessedGames call.
 def player1(board: tilewe.Board, player: tilewe.Color) -> tilewe.Move: return tile_size_bot(board, player)
