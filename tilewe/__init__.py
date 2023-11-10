@@ -495,8 +495,12 @@ class Board:
     def n_players(self) -> int: 
         return self._n_players 
 
+    @property 
+    def scores(self) -> list[int]: 
+        return [p.score for p in self._players] 
+
     @property
-    def winners(self): 
+    def winners(self) -> list[int]: 
         if not self.finished: 
             return None 
         
