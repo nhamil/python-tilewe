@@ -10,6 +10,7 @@ from multiprocessing import Pool
 #from nik import Bot as nik_bot
 
 tilewe.print_color = False
+VERBOSE_LOGS = False
 
 # Runs a single game with the specified bots in their given player order
 # Author: Michael
@@ -27,7 +28,7 @@ def play_game(
     board = tilewe.Board(player_count) 
 
     # Play game
-    print(f"Starting Game #{id}")
+    if VERBOSE_LOGS: print(f"Starting Game #{id}")
     while not board.finished: 
         if (board.current_player == tilewe.COLORS[0]):
             move = B1(board, tilewe.COLORS[0])
@@ -40,8 +41,9 @@ def play_game(
         board.push(move) 
     
     # Finish game
-    print(f"Finished Game #{id}")
-    print(board)
+    if VERBOSE_LOGS:
+        print(f"Finished Game #{id}")
+        print(board)
     return board
 
 # Runs a series of game's in parallel using multiprocessing
