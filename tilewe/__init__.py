@@ -1,17 +1,17 @@
-import copy 
+from collections import defaultdict
 
 import numpy as np 
 
-PieceType = int 
-PIECE_TYPES = [
-    O1, I2, L3, I3, I4, L4, Z4, O4, T4, F5, I5, L5, N5, P5, T5, U5, V5, W5, X5, Y5, Z5
-] = range(21) 
+print_color = True 
 
-PIECE_NAMES = [
-    "O1", "I2", "L3", "I3", "I4", "L4", "Z4", "O4", "T4", "F5", "I5", "L5", "N5", "P5", "T5", "U5", "V5", "W5", "X5", "Y5", "Z5"
-]
+Tile = tuple[int, int] 
 
-Tile = int 
+Piece = int 
+
+Rotation = int 
+
+Color = int
+
 TILES = [
     A01, B01, C01, D01, E01, F01, G01, H01, I01, J01, K01, L01, M01, N01, O01, P01, Q01, R01, S01, T01, 
     A02, B02, C02, D02, E02, F02, G02, H02, I02, J02, K02, L02, M02, N02, O02, P02, Q02, R02, S02, T02, 
@@ -33,7 +33,9 @@ TILES = [
     A18, B18, C18, D18, E18, F18, G18, H18, I18, J18, K18, L18, M18, N18, O18, P18, Q18, R18, S18, T18, 
     A19, B19, C19, D19, E19, F19, G19, H19, I19, J19, K19, L19, M19, N19, O19, P19, Q19, R19, S19, T19, 
     A20, B20, C20, D20, E20, F20, G20, H20, I20, J20, K20, L20, M20, N20, O20, P20, Q20, R20, S20, T20
-] = range(400) 
+] = [
+    Tile((y, x)) for y in range(20) for x in range(20)
+]
 
 TILE_NAMES = [
     "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", "i1", "j1", "k1", "l1", "m1", "n1", "o1", "p1", "q1", "r1", "s1", "t1", 
@@ -58,268 +60,440 @@ TILE_NAMES = [
     "a20", "b20", "c20", "d20", "e20", "f20", "g20", "h20", "i20", "j20", "k20", "l20", "m20", "n20", "o20", "p20", "q20", "r20", "s20", "t20"
 ]
 
-def tile_to_coords(tile: Tile) -> tuple[int, int]: 
-    """
-    Returns y,x coordinates between 0 and 19 using bottom left as the origin.
-    """
-    return tile // 20, tile % 20
-
-def coords_to_tile(y: int, x: int) -> Tile: 
-    return y * 20 + x
-
-Color = int
-COLORS = [
-    BLUE, YELLOW, RED, GREEN
-] = range(4)
-
-COLOR_NAMES = [
-    'blue', 'yellow', 'red', 'green'
-]
-
-Rotation = int
 ROTATIONS = [
     NORTH, EAST, SOUTH, WEST, NORTH_F, EAST_F, SOUTH_F, WEST_F
-] = range(8)
+] = [Rotation(x) for x in range(8)]
 
 ROTATION_NAMES = [
     'n', 'e', 's', 'w', 'nf', 'ef', 'sf', 'wf'
 ]
 
+COLORS = [
+    BLUE, YELLOW, RED, GREEN
+] = [Color(x) for x in range(4)]
+
+COLOR_NAMES = [
+    'blue', 'yellow', 'red', 'green'
+]
+
+PIECE_COUNT = 0
+_PIECES = [] # type: list[_Piece]
+_PIECE_ROTATIONS = [] # type: list[_PieceRotation]
+_PIECE_ROTATION_POINTS = [] # type: list[_PieceRotationPoint]
+
 class _Piece: 
 
-    def __init__(self, shape: np.array): 
-        self.shapes, self.unique = _Piece.generate_rotations(shape) 
-        self.contacts = _Piece.generate_contacts(self.shapes) 
+    def __init__(self, name: str, id: int): 
+        self.name = name 
+        self.id = id 
+        self.rotations = [] # type: list[_PieceRotation]
+        self.unique = [] # type: list[bool]
 
-        self.score = self.shapes[0].sum()
+class _PieceRotation: 
 
-    @staticmethod
-    def generate_rotations(shape: np.ndarray) -> tuple[list[np.ndarray], list[bool]]: 
-        """
-        Returns all possible flips and rotations of a base piece shape. 
-        """
-        out, unique = [], [] 
+    def __init__(self, name: str, pc: _Piece, rot: Rotation, shape: np.ndarray): 
+        self.id = len(_PIECE_ROTATIONS)
+        self.piece = pc
+        self.rotation = rot 
+        _PIECE_ROTATIONS.append(self) 
 
-        def add(arr): 
-            found = False 
-            for x in out: 
-                if x.shape == arr.shape and np.all(x == arr): 
-                    found = True 
-                    break 
-            unique.append(not found) 
-            out.append(arr) 
+        self.name = name 
+        self.shape = np.array(shape, dtype=np.uint8) 
 
-        # original shape, north
-        cur = np.array(shape, dtype=np.uint8)[::-1] 
-        add(cur) 
+        self.tiles = [] # type: list[Tile]
+        self.contacts = [] # type: list[Tile]
+        self.prps = {} # type: dict[Tile, _PieceRotationPoint]
 
-        # east
-        cur = np.rot90(cur, 1) 
-        add(cur)
+        self.contact_shape = np.zeros_like(shape, dtype=np.uint8)
+        H,W = shape.shape
+        for y in range(H): 
+            for x in range(W): 
+                # check each tile in piece 
+                if shape[y,x] != 0: 
+                    self.tiles.append((y, x))
+                    v_neighbors = 0
+                    h_neighbors = 0
 
-        # south
-        cur = np.rot90(cur, 1) 
-        add(cur)
+                    if y > 0   and shape[y-1,x] != 0: v_neighbors += 1
+                    if y < H-1 and shape[y+1,x] != 0: v_neighbors += 1
+                    if x > 0   and shape[y,x-1] != 0: h_neighbors += 1
+                    if x < W-1 and shape[y,x+1] != 0: h_neighbors += 1
 
-        # west
-        cur = np.rot90(cur, 1) 
-        add(cur)
+                    n_neighbors = v_neighbors + h_neighbors
 
-        # flipped 
-        n_unflipped = len(out) 
-        for i in range(n_unflipped): 
-            add(np.fliplr(out[i])) 
+                    if (n_neighbors <= 1) or (v_neighbors == 1 and h_neighbors == 1): 
+                        self.contacts.append((y, x))
+                        self.contact_shape[y, x] = 1
 
-        return out, unique
+        for coord in self.contacts: 
+            self.prps[coord] = _PieceRotationPoint(name, self, coord) 
 
-    @staticmethod 
-    def generate_contacts(shapes: list[np.ndarray]) -> list[np.ndarray]: 
-        """
-        Returns a list of tuples describing index and y,x coordinates of tiles 
-        in a list of piece orientations that can be used to connect the piece 
-        to an open corner on the board. 
-        """
-        out = [] 
+class _PieceRotationPoint: 
 
-        for shape in shapes: 
-            contacts = np.zeros_like(shape, dtype=np.uint8)
-            out.append(contacts) 
+    def __init__(self, name: str, rot: _PieceRotation, pt: Tile): 
+        self.id = len(_PIECE_ROTATION_POINTS)
+        self.piece = rot.piece 
+        self.rotation = rot 
+        self.piece_id = self.piece.id 
+        self.name = name 
+        self.contact = pt 
+        _PIECE_ROTATION_POINTS.append(self) 
 
-            H,W = shape.shape
-            for y in range(H): 
-                for x in range(W): 
-                    # check each tile in piece 
-                    if shape[y,x] != 0: 
-                        v_neighbors = 0
-                        h_neighbors = 0
+        dy, dx = pt 
+        
+        self.tiles = [] # type: list[Tile]
+        self.adjacent = set() # type: list[Tile]
+        self.corners = set() # type: list[Tile]
 
-                        if y > 0   and shape[y-1,x] != 0: v_neighbors += 1
-                        if y < H-1 and shape[y+1,x] != 0: v_neighbors += 1
-                        if x > 0   and shape[y,x-1] != 0: h_neighbors += 1
-                        if x < W-1 and shape[y,x+1] != 0: h_neighbors += 1
+        for y, x in rot.tiles: 
+            self.tiles.append((y - dy, x - dx))
 
-                        n_neighbors = v_neighbors + h_neighbors
+        for y, x in self.tiles: 
+            for cy, cx in [(-1, 0), (1, 0), (0, -1), (0, 1)]: 
+                rel = (y + cy, x + cx)
+                if rel not in self.tiles: 
+                    self.adjacent.add(rel) 
 
-                        if (n_neighbors <= 1) or (v_neighbors == 1 and h_neighbors == 1): 
-                            contacts[y, x] = 1
-                    
-        return out 
-    
-    def get_shape(self, rotation: Rotation) -> np.ndarray: 
-        return self.shapes[rotation]
-    
-    def get_contacts(self, rotation: Rotation) -> np.ndarray: 
-        return self.contacts[rotation]
+        for y, x in self.tiles: 
+            for cy, cx in [(-1, -1), (1, -1), (-1, 1), (1, 1)]: 
+                rel = (y + cy, x + cx)
+                if rel not in self.tiles and rel not in self.adjacent: 
+                    self.corners.add(rel) 
+            
+        self.adjacent = sorted(list(self.adjacent))
+        self.corners = sorted(list(self.corners))
 
-PIECE_O1 = _Piece([[1]]) 
+def _create_piece(name: str, shape: list[list[int]]) -> Piece: 
+    global PIECE_COUNT 
+    id = PIECE_COUNT 
+    PIECE_COUNT += 1 
+    pc = _Piece(name, id) 
+    _PIECES.append(pc) 
 
-PIECE_I2 = _Piece([
+    f_names = []
+    def add(suffix: str, arr: np.ndarray): 
+        rot = None 
+        unique = True 
+
+        for x in pc.rotations: 
+            if x.shape.shape == arr.shape and np.all(x.shape == arr): 
+                rot = x 
+                unique = False 
+                break 
+
+        if rot is None: 
+            rot = _PieceRotation(name + suffix, pc, len(pc.rotations), arr)
+
+        f_names.append(suffix + "f")
+        pc.rotations.append(rot) 
+        pc.unique.append(unique) 
+
+    # original shape, north
+    cur = np.array(shape, dtype=np.uint8)[::-1] 
+    add("n", cur) 
+
+    # east
+    cur = np.rot90(cur, 1) 
+    add("e", cur)
+
+    # south
+    cur = np.rot90(cur, 1) 
+    add("s", cur)
+
+    # west
+    cur = np.rot90(cur, 1) 
+    add("w", cur)
+
+    # flipped 
+    n_unflipped = len(pc.rotations) 
+    for i in range(n_unflipped): 
+        add(f_names[i], np.fliplr(pc.rotations[i].shape)) 
+        
+    return id 
+
+O1 = _create_piece("O1", [
+    [1]
+]) 
+
+I2 = _create_piece("I2", [
     [1], 
     [1]
 ])
 
-PIECE_I3 = _Piece([
+I3 = _create_piece("I3", [
     [1],
     [1],
     [1]
 ])
-PIECE_L3 = _Piece([
+L3 = _create_piece("L3", [
     [1, 0], 
     [1, 1]
 ])
 
-PIECE_I4 = _Piece([
+I4 = _create_piece("I4", [
     [1], 
     [1], 
     [1], 
     [1]
 ])
-PIECE_L4 = _Piece([
+L4 = _create_piece("L4", [
     [1, 0], 
     [1, 0], 
     [1, 1]
 ])
-PIECE_Z4 = _Piece([
+Z4 = _create_piece("Z4", [
     [1, 1, 0], 
     [0, 1, 1]
 ])
-PIECE_O4 = _Piece([
+O4 = _create_piece("O4", [
     [1, 1], 
     [1, 1]
 ])
-PIECE_T4 = _Piece([
+T4 = _create_piece("T4", [
     [1, 1, 1], 
     [0, 1, 0]
 ])
 
-PIECE_F5 = _Piece([
+F5 = _create_piece("F5", [
     [0, 1, 1], 
     [1, 1, 0], 
     [0, 1, 0]
 ])
-PIECE_I5 = _Piece([
+I5 = _create_piece("I5", [
     [1], 
     [1], 
     [1], 
     [1], 
     [1]
 ])
-PIECE_L5 = _Piece([
+L5 = _create_piece("L5", [
     [1, 0], 
     [1, 0], 
     [1, 0], 
     [1, 1]
 ])
-PIECE_N5 = _Piece([
+N5 = _create_piece("N5", [
     [0, 1], 
     [1, 1], 
     [1, 0], 
     [1, 0]
 ])
-PIECE_P5 = _Piece([
+P5 = _create_piece("P5", [
     [1, 1], 
     [1, 1], 
     [1, 0]
 ])
-PIECE_T5 = _Piece([
+T5 = _create_piece("T5", [
     [1, 1, 1], 
     [0, 1, 0], 
     [0, 1, 0]
 ])
-PIECE_U5 = _Piece([
+U5 = _create_piece("U5", [
     [1, 0, 1], 
     [1, 1, 1]
 ])
-PIECE_V5 = _Piece([
+V5 = _create_piece("V5", [
     [0, 0, 1], 
     [0, 0, 1], 
     [1, 1, 1]
 ])
-PIECE_W5 = _Piece([
+W5 = _create_piece("W5", [
     [0, 0, 1], 
     [0, 1, 1], 
     [1, 1, 0]
 ])
-PIECE_X5 = _Piece([
+X5 = _create_piece("X5", [
     [0, 1, 0], 
     [1, 1, 1], 
     [0, 1, 0]
 ])
-PIECE_Y5 = _Piece([
+Y5 = _create_piece("Y5", [
     [0, 1], 
     [1, 1], 
     [0, 1], 
     [0, 1]
 ])
-PIECE_Z5 = _Piece([
+Z5 = _create_piece("Z5", [
     [1, 1, 0], 
     [0, 1, 0], 
     [0, 1, 1]
 ])
 
-PIECES = [
-    PIECE_O1, PIECE_I2, PIECE_L3, PIECE_I3, PIECE_I4, PIECE_L4, PIECE_Z4, PIECE_O4, PIECE_T4, 
-    PIECE_F5, PIECE_I5, PIECE_L5, PIECE_N5, PIECE_P5, PIECE_T5, PIECE_U5, PIECE_V5, PIECE_W5, 
-    PIECE_X5, PIECE_Y5, PIECE_Z5
-]
+_PRP_WITH_REL_COORD = defaultdict(set) # type: dict[Tile, set[_PieceRotationPoint]]
+for _pt in _PIECE_ROTATION_POINTS: 
+    for _tile in _pt.tiles: 
+        _PRP_WITH_REL_COORD[_tile].add(_pt) 
 
-class Move: 
+_PRP_WITH_ADJ_REL_COORD = defaultdict(set) # type: dict[Tile, set[_PieceRotationPoint]]
+for _pt in _PIECE_ROTATION_POINTS: 
+    for _tile in _pt.adjacent: 
+        _PRP_WITH_ADJ_REL_COORD[_tile].add(_pt) 
 
-    def __init__(self, piece: PieceType, rotation: Rotation, contact: Tile, coord: Tile): 
-        self.piece = piece 
-        self.rotation = rotation
-        self.contact = contact 
-        self.coord = coord
+_PRP_REL_COORDS = set() # type: list[Tile]
+for _pt in _PRP_WITH_REL_COORD:
+    _PRP_REL_COORDS.add(_pt)
+for _pt in _PRP_WITH_ADJ_REL_COORD:
+    _PRP_REL_COORDS.add(_pt)
+_PRP_REL_COORDS = list(_PRP_REL_COORDS)
 
-    def __str__(self): 
-        return f"{PIECE_NAMES[self.piece]}{ROTATION_NAMES[self.rotation]}-{TILE_NAMES[self.contact]}{TILE_NAMES[self.coord]}"
+_PRP_WITH_PC_ID = defaultdict(set) # type: dict[int, set[_PieceRotationPoint]]
+for _pt in _PIECE_ROTATION_POINTS: 
+    _PRP_WITH_PC_ID[_pt.piece_id].add(_pt) 
+
+def out_of_bounds(tile: Tile) -> bool: 
+    if tile[0] < 0 or tile[0] >= 20: return True 
+    if tile[1] < 0 or tile[1] >= 20: return True 
+
+class _PlayerState: 
+
+    def __init__(self, prps: set[_PieceRotationPoint], corners: dict[Tile, set[_PieceRotationPoint]], has_played: bool, score: int): 
+        self.prps = prps 
+        self.corners = corners 
+        self.has_played = has_played 
+        self.score = score
 
 class _Player: 
 
-    def __init__(self): 
-        self.pieces = [True for _ in PIECE_TYPES]
-        self.n_pieces = len(PIECE_TYPES) 
+    def __init__(self, name: str, id: int, board: 'Board'): 
+        self.name = name 
+        self.id = id
+        self._prps = set(_PIECE_ROTATION_POINTS) 
+        self.board = board 
+        self.corners = {} # type: dict[Tile, set[_PieceRotationPoint]]
+        self.has_played = False 
+        self._state = [] # type: list[_PlayerState]
         self.score = 0
-        self.legal = np.ones((400), dtype=np.uint8)
-        self.corners = np.zeros((400), dtype=np.uint8)
-        self.can_play = True 
-        self.has_played = False
+
+        self.add_corner(A01) 
+        self.add_corner(A20) 
+        self.add_corner(T01) 
+        self.add_corner(T20) 
+
+    @property 
+    def can_play(self) -> bool: 
+        return len(self.corners) > 0 
+
+    def push_state(self) -> None: 
+        prps = set(self._prps) 
+        corners = {} 
+
+        for key, value in self.corners.items(): 
+            corners[key] = set(value) 
+
+        self._state.append(_PlayerState(prps, corners, self.has_played, self.score))
+
+    def pop_state(self) -> bool: 
+        state = self._state.pop() 
+
+        self._prps = state.prps 
+        self.corners = state.corners 
+        self.has_played = state.has_played
+        self.score = state.score 
+
+    def remove_piece(self, piece_id: int) -> None: 
+        # remove piece permutations from availability list 
+        prps = _PRP_WITH_PC_ID[piece_id]
+        self._prps.difference_update(prps)
+
+        remove = [] 
+
+        # remove piece permutations from all open corners 
+        for key, corner in self.corners.items(): 
+            corner.difference_update(prps) 
+            if len(corner) == 0: 
+                remove.append(key)
+
+        for r in remove: 
+            del self.corners[r]
+
+    def on_tiles_filled(self, tiles: list[Tile]) -> None: 
+        # if an open corner was filled, no player can use it anymore
+        for tile in tiles: 
+            self.corners.pop(tile, None) 
+
+        remove = []
+
+        # for each open corner, 
+        #     find all piece permutations that need one of the filled tiles
+        #     and remove them from possible moves 
+        for corner, prps in self.corners.items(): 
+            invalid = set() # type: set[_PieceRotationPoint] 
+            for tile in tiles: 
+                rel = (tile[0] - corner[0], tile[1] - corner[1]) 
+                invalid.update(_PRP_WITH_REL_COORD[rel])
+            prps.difference_update(invalid) 
+            if len(prps) == 0: 
+                remove.append(corner) 
+
+        for r in remove: 
+            del self.corners[r]
+
+    def add_corner(self, tile: Tile) -> None:
+        if tile in self.corners or out_of_bounds(tile):
+            return
+
+        bad = set() # type: set[_PieceRotationPoint]
+
+        for rel in _PRP_REL_COORDS: 
+            pt = (rel[0] + tile[0], rel[1] + tile[1])
+            if out_of_bounds(pt) or self.board._tiles[pt] != 0:
+                bad.update(_PRP_WITH_REL_COORD[rel])
+            if not out_of_bounds(pt) and self.board._tiles[pt] == self.id + 1:
+                bad.update(_PRP_WITH_ADJ_REL_COORD[rel])
+
+        prps = self._prps.difference(bad)
+        if len(prps) > 0:
+            self.corners[tile] = prps
+
+class Move: 
+
+    def __init__(self, piece: Piece, rotation: Rotation, contact: Tile, to_square: Tile): 
+        self.piece = piece 
+        self.rotation = rotation 
+        self.contact = contact 
+        self.to_square = to_square 
+
+    def __str__(self): 
+        return _PIECES[self.piece].name + \
+               ROTATION_NAMES[self.rotation] + \
+               "-" + \
+               TILE_NAMES[TILES.index(self.contact)] + \
+               TILE_NAMES[TILES.index(self.to_square)]
 
 class _BoardState: 
 
-    def __init__(self, n_players): 
-        self.board = np.zeros((400), dtype=np.uint8)
-        self.players = [_Player() for _ in range(n_players)] 
-        self.turn = COLORS[0]
-        self.ply = 0
-        self.moves = [] 
-        self.finished = False
+    def __init__(self, cur_player: int, tiles: list[Tile]): 
+        self.cur_player = cur_player
+        self.tiles = tiles 
 
-        self.open_corners = np.zeros((400), dtype=np.uint8)
-        self.open_corners[A01] = 1 
-        self.open_corners[A20] = 1 
-        self.open_corners[T01] = 1 
-        self.open_corners[T20] = 1
+class Board: 
+
+    def __init__(self, n_players: int): 
+        if n_players < 1 or n_players > 4: 
+            raise Exception("Number of players must be between 1 and 4") 
+
+        self._state = [] # type: list[_BoardState]
+        self._tiles = np.zeros((20, 20), dtype=np.uint8) 
+        self._n_players = n_players 
+        self._players = [] # type: list[_Player]
+
+        chars = [
+            'B', 
+            'Y', 
+            'R', 
+            'G'
+        ]
+        for i in range(n_players): 
+            self._players.append(_Player(chars[i], i, self))
+
+        self.current_player = 0 # type: int 
+        self.finished = False 
+        self.ply = 0 
+        self.moves = [] # type: list[Move]
+
+    @property
+    def n_players(self) -> int: 
+        return self._n_players 
 
     @property
     def winners(self): 
@@ -327,247 +501,176 @@ class _BoardState:
             return None 
         
         best = [0]
-        for i in range(1, len(self.players)): 
-            if self.players[i].score == self.players[best[0]].score: 
+        for i in range(1, len(self._players)): 
+            if self._players[i].score == self._players[best[0]].score: 
                 best.append(i)
-            elif self.players[i].score > self.players[best[0]].score: 
+            elif self._players[i].score > self._players[best[0]].score: 
                 best = [i]
         return best 
 
-    def push_move(self, move: Move): 
-        # remove tile 
-        player = self.players[self.turn] 
-        player.pieces[move.piece] = False 
-        player.n_pieces -= 1 
+    def color_at(self, tile: Tile) -> int: 
+        return int(self._tiles[tile])
 
-        # add score 
-        player.score += PIECES[move.piece].score
+    def _is_legal(self, prp_id: int, tile: Tile, player: int=None) -> bool: 
+        if player is None: 
+            player = self.current_player 
 
-        # add piece to board 
-        board = self.board.reshape((20, 20)) 
-        shape = PIECES[move.piece].get_shape(move.rotation) 
-        sy, sx = shape.shape
-        y, x = tile_to_coords(move.coord) 
-        cy, cx = tile_to_coords(move.contact) 
-        y -= cy 
-        x -= cx 
-        board[y:y+sy,x:x+sx] += shape * (self.turn + 1)
+        player = self._players[player] # type: _Player
+
+        prps = player.corners.get(tile, set())
+        return _PIECE_ROTATION_POINTS[prp_id] in prps
+        
+    def generate_legal_moves(self, unique: bool=False): 
+        if not unique: 
+            raise Exception("non-unique rotations not supported yet") 
+        
+        moves = [] # type: list[Move] 
+
+        player = self._players[self.current_player]
+
+        for to_sq, prps in player.corners.items(): 
+            for prp in prps: 
+                moves.append(Move(
+                    prp.piece.id, 
+                    prp.rotation.rotation, 
+                    prp.contact, 
+                    to_sq
+                ))
+
+        return moves 
+
+    def push(self, move: Move) -> None: 
+        """
+        Legality is assumed to be true. 
+        """
+        prp = _PIECES[move.piece].rotations[move.rotation].prps[move.contact]
+        self._push_prp(move, prp.id, move.to_square) 
+
+    def pop(self) -> None: 
+        state = self._state.pop() 
+        self.moves.pop() 
+
+        # take back piece 
+        for tile in state.tiles: 
+            self._tiles[tile] = 0 
+
+        self.current_player = state.cur_player 
+        self.finished = False 
+        self.ply -= 1 
+
+        # pop player state 
+        for player in self._players: 
+            player.pop_state() 
+
+    def _push_prp(self, move: Move, prp_id: int, tile: Tile) -> None: 
+        prp = _PIECE_ROTATION_POINTS[prp_id]
+
+        self.moves.append(move) 
+
+        player = self._players[self.current_player]
+
+        for p in self._players: 
+            p.push_state() 
+
+        # absolute position of tiles 
+        tiles = [(t[0] + tile[0], t[1] + tile[1]) for t in prp.tiles]
+        corners = [(t[0] + tile[0], t[1] + tile[1]) for t in prp.corners]
+        adj = [(t[0] + tile[0], t[1] + tile[1]) for t in prp.adjacent]
+
+        for abs_tile in corners: 
+            player.add_corner(abs_tile) 
+
+        for abs_tile in tiles: 
+            self._tiles[abs_tile] = self.current_player + 1
+
+        for p in self._players: 
+            p.on_tiles_filled(tiles) 
+
+        # player can't place tiles adjacent to their own color 
+        player.on_tiles_filled(adj) 
+        player.remove_piece(prp.piece_id)
+
+        if not player.has_played: 
+            player.corners.pop(A01, None)
+            player.corners.pop(A20, None)
+            player.corners.pop(T01, None)
+            player.corners.pop(T20, None)
+
         player.has_played = True 
+        player.score += len(prp.tiles)
 
-        # remove corner from other players' starting position
-        self.open_corners[move.coord] = 0 
-
-        # find openings for each player 
-        empty = (board == 0).astype(np.uint8)
-        for p in range(len(self.players)): 
-            pl = self.players[p] 
-            if not pl.can_play: 
-                continue 
-
-            has_p = (board == p + 1).astype(np.uint8)
-
-            legal = np.copy(empty) 
-            legal[1:,:] &= ~has_p[:19,:]
-            legal[:19,:] &= ~has_p[1:,:]
-            legal[:,1:] &= ~has_p[:,:19]
-            legal[:,:19] &= ~has_p[:,1:]
-
-            corners = np.zeros_like(empty)
-            corners[1:,1:] |= has_p[:19,:19]
-            corners[1:,:19] |= has_p[:19,1:] 
-            corners[:19,1:] |= has_p[1:,:19]
-            corners[:19,:19] |= has_p[1:,1:]
-            corners &= legal
-
-            pl.legal[:] = legal.reshape(-1)
-            pl.corners[:] = corners.reshape(-1)
-            pl.can_play = len(self.get_legal_moves(unique=True, for_player=p)) > 0 
+        # # # TODO skip players with no move 
+        # self.current_player += 1 
+        # if self.current_player >= self._n_players: 
+        #     self.current_player = 0  
 
         # inc turn and make sure player can move 
         self.ply += 1
-        cur_turn = self.turn
+        cur_turn = self.current_player
         while True: 
-            self.turn += 1
-            if self.turn >= len(self.players): 
-                self.turn = 0 
-            if self.players[self.turn].can_play: 
+            self.current_player += 1
+            if self.current_player >= len(self._players): 
+                self.current_player = 0 
+            if self._players[self.current_player].can_play: 
                 break 
 
             # looped all the way back to same player 
             # no player can play, game is done
-            if cur_turn == self.turn: 
+            if cur_turn == self.current_player: 
                 self.finished = True 
                 break 
 
-    def is_legal(self, move: Move, for_player: int=None): 
-        # no move is legal after game is done 
-        if self.finished: 
-            return False 
-        
-        if for_player is None: 
-            for_player = self.turn
+        self._state.append(_BoardState(cur_turn, tiles))
 
-        # player must not have played the piece yet 
-        player = self.players[for_player] 
-        if not player.pieces[move.piece]: 
-            return False 
-
-        diags = player.corners
-
-        # first move must be in a corner 
-        if not player.has_played: 
-            diags = self.open_corners 
-
-        # piece must be placed on a diagonal (or corner on first move) 
-        if diags[move.coord] != 1: 
-            return False
-        
-        pc = PIECES[move.piece] 
-        shape = pc.get_shape(move.rotation) 
-        contacts = pc.get_contacts(move.rotation) 
-
-        # contact tile must be an endpoint or corner of the piece 
-        cy, cx = tile_to_coords(move.contact) 
-        sy, sx = contacts.shape
-        if cy >= sy or cx >= sx or contacts[cy,cx] == 0: 
-            return False
-        
-        # piece must be placed in bounds 
-        dn = sy - cy - 1 
-        ds = cy 
-        de = sx - cx - 1 
-        dw = cx 
-        y, x = tile_to_coords(move.coord) 
-        if y + dn >= 20: return False
-        if y - ds < 0: return False
-        if x + de >= 20: return False
-        if x - dw < 0: return False
-
-        # tiles must not overlap 
-        y -= cy 
-        x -= cx 
-        if np.any((self.board.reshape((20, 20))[y:y+sy,x:x+sx] != 0) & shape): 
-            return False
-        
-        # no part of the piece may be adjacent to the player's other pieces
-        if np.any((player.legal.reshape((20, 20))[y:y+sy,x:x+sx] & shape) != shape): 
-            return False
-        
-        return True 
-    
-    def get_pseudolegal_moves(self, unique=False, for_player: int=None) -> list[Move]: 
-        if self.finished: 
-            return []
-        
-        out = [] 
-
-        if for_player is None: 
-            for_player = self.turn
-
-        player = self.players[for_player] 
-        diags = player.corners
-        if not player.can_play: 
-            return [] 
-
-        # first move must be in a corner 
-        if not player.has_played: 
-            diags = self.open_corners 
-
-        for diag in diags.nonzero()[0]: 
-            for pc, has in enumerate(player.pieces): 
-                if has: 
-                    rotations = PIECES[pc].contacts 
-                    for rot, contacts in enumerate(rotations): 
-                        if unique and not PIECES[pc].unique[rot]: 
-                            continue 
-                        for y, x in zip(*contacts.nonzero()): 
-                            out.append(Move(pc, rot, coords_to_tile(y, x), diag))
-
-        return out 
-    
-    def get_legal_moves(self, unique=False, for_player=None) -> list[Move]: 
-        pseudo = self.get_pseudolegal_moves(unique=unique, for_player=for_player) 
-
-        out = [] 
-        for mv in pseudo: 
-            if self.is_legal(mv, for_player=for_player): 
-                out.append(mv)
-        
-        return out 
-    
     def __str__(self): 
         out = "" 
         
-        board = self.board.reshape((20, 20))[::-1]
-        chars = [
-            '.', 
-            '\033[94mB\033[0m', 
-            '\033[93mY\033[0m', 
-            '\033[91mR\033[0m', 
-            '\033[92mG\033[0m'
-        ]
+        board = self._tiles[::-1]
+
+        chars = None
+        if print_color: 
+            chars = [
+                '.', 
+                '\033[94mB\033[0m', 
+                '\033[93mY\033[0m', 
+                '\033[91mR\033[0m', 
+                '\033[92mG\033[0m'
+            ]
+        else: 
+            chars = [
+                '.', 
+                'B', 
+                'Y', 
+                'R', 
+                'G'
+            ]
 
         for y in range(20): 
             for x in range(20): 
                 out += f"{chars[board[y,x]]} "
             out += "\n"
 
-        for i in range(len(self.players)): 
-            out += f"{chars[i+1]}: {int(self.players[i].score)} "
-            if sum(int(x) for x in self.players[i].pieces) > 0: 
+        for player in self._players: 
+            out += f"{player.name}: {int(player.score)} "
+
+            pcs = set() 
+            for prp in player._prps: 
+                pcs.add(prp.piece)
+
+            if len(pcs) > 0: 
+                pcs = sorted(list(pcs), key=lambda x: x.id) # type: list[_Piece]
+
                 out += "( "
-                for pc, has in enumerate(self.players[i].pieces): 
-                    if has: 
-                        out += PIECE_NAMES[pc] + " "
+                for pc in pcs: 
+                    out += pc.name + " " 
                 out += ")\n"
 
         out += f"Finished: {self.finished}"
         if self.finished: 
             out += f"\nWinner: "
             for p in self.winners: 
-                out += f"{chars[p+1]} "
+                out += f"{self._players[p].name} "
         else: 
-            out += f"\nTurn: {chars[self.turn+1]}"
+            out += f"\nTurn: {self._players[self.current_player].name}"
 
         return out 
-
-class Board: 
-
-    def __init__(self, n_players: int): 
-        self.stack = [_BoardState(n_players=n_players)]
-    
-    @property
-    def state(self): 
-        return self.stack[-1]
-    
-    @property 
-    def finished(self): 
-        return self.state.finished 
-
-    @property 
-    def winners(self): 
-        return self.state.winners
-
-    def get_pseudolegal_moves(self, unique=False) -> list[Move]: 
-        return self.state.get_pseudolegal_moves(unique=unique) 
-
-    def get_legal_moves(self, unique=False) -> list[Move]: 
-        return self.state.get_legal_moves(unique=unique) 
-
-    def is_legal(self, move: Move) -> bool: 
-        return self.state.is_legal(move) 
-
-    def push_move(self, move: Move): 
-        """
-        Plays a move on the board. The move is assumed to be legal (it can be
-        checked with `Board.is_legal()`).
-        """
-        board = copy.deepcopy(self.state) 
-        board.push_move(move) 
-        self.stack.append(board) 
-        
-    def pop_move(self): 
-        self.stack.pop() 
-
-    def __str__(self): 
-        return str(self.state)
