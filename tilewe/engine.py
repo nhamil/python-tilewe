@@ -80,9 +80,9 @@ class Tournament:
                 board.push(move) 
 
             # put scores back in original engine order 
-            winners = [ engine_to_player[x] for x in board.winners ]
+            winners = [ player_to_engine[x] for x in board.winners ]
             board_scores = board.scores
-            scores = [ board_scores[player_to_engine[i]] for i in range(len(self.engines)) ]
+            scores = [ board_scores[engine_to_player[i]] for i in range(len(self.engines)) ]
 
             return winners, scores, board
         
