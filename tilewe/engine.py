@@ -36,15 +36,15 @@ class Tournament:
 
     def __init__(self, engines: list[Engine], move_seconds: int=60): 
         self.engines = list(engines)
-        self.default_move_seconds = move_seconds
-        self.move_seconds = self.default_move_seconds
+        self._seconds = move_seconds
+        self.move_seconds = self._seconds
 
     def play(self, n_games: int, n_threads: int=1, move_seconds: int=None):
         # initialize trackers and game controls
         games = 0
         wins = [0 for _ in range(len(self.engines))]
         totals = [0 for _ in range(len(self.engines))]
-        self.move_seconds = move_seconds if move_seconds is not None else self.default_move_seconds
+        self.move_seconds = move_seconds if move_seconds is not None else self._seconds
 
         N = len(self.engines)
 
