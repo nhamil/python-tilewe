@@ -76,10 +76,14 @@ COLOR_NAMES = [
     'blue', 'yellow', 'red', 'green'
 ]
 
+# internally int, so copies value not reference 
+_PrpSet = int
+
 PIECE_COUNT = 0
 _PIECES = [] # type: list[_Piece]
 _PIECE_ROTATIONS = [] # type: list[_PieceRotation]
 _PIECE_ROTATION_POINTS = [] # type: list[_PieceRotationPoint]
+_PRP_SET_ALL = 0 # type: _PrpSet
 
 class _Piece: 
 
@@ -135,6 +139,9 @@ class _PieceRotationPoint:
 
     def __init__(self, name: str, rot: _PieceRotation, pt: Tile): 
         self.id = len(_PIECE_ROTATION_POINTS)
+        self.as_set = 1 << self.id 
+        global _PRP_SET_ALL
+        _PRP_SET_ALL |= self.as_set
         self.piece = rot.piece 
         self.rotation = rot 
         self.piece_id = self.piece.id 
@@ -322,15 +329,15 @@ Z5 = _create_piece("Z5", [
     [0, 1, 1]
 ])
 
-_PRP_WITH_REL_COORD = defaultdict(set) # type: dict[Tile, set[_PieceRotationPoint]]
+_PRP_WITH_REL_COORD = defaultdict(_PrpSet) # type: dict[Tile, _PrpSet]
 for _pt in _PIECE_ROTATION_POINTS: 
     for _tile in _pt.tiles: 
-        _PRP_WITH_REL_COORD[_tile].add(_pt) 
+        _PRP_WITH_REL_COORD[_tile] |= _pt.as_set
 
-_PRP_WITH_ADJ_REL_COORD = defaultdict(set) # type: dict[Tile, set[_PieceRotationPoint]]
+_PRP_WITH_ADJ_REL_COORD = defaultdict(_PrpSet) # type: dict[Tile, _PrpSet]
 for _pt in _PIECE_ROTATION_POINTS: 
     for _tile in _pt.adjacent: 
-        _PRP_WITH_ADJ_REL_COORD[_tile].add(_pt) 
+        _PRP_WITH_ADJ_REL_COORD[_tile] |= _pt.as_set
 
 _PRP_REL_COORDS = set() # type: list[Tile]
 for _pt in _PRP_WITH_REL_COORD:
@@ -339,17 +346,20 @@ for _pt in _PRP_WITH_ADJ_REL_COORD:
     _PRP_REL_COORDS.add(_pt)
 _PRP_REL_COORDS = list(_PRP_REL_COORDS)
 
-_PRP_WITH_PC_ID = defaultdict(set) # type: dict[int, set[_PieceRotationPoint]]
+_PRP_WITH_PC_ID = defaultdict(_PrpSet) # type: dict[int, _PrpSet]
 for _pt in _PIECE_ROTATION_POINTS: 
-    _PRP_WITH_PC_ID[_pt.piece_id].add(_pt) 
+    _PRP_WITH_PC_ID[_pt.piece_id] |= _pt.as_set
 
 def out_of_bounds(tile: Tile) -> bool: 
-    if tile[0] < 0 or tile[0] >= 20: return True 
-    if tile[1] < 0 or tile[1] >= 20: return True 
+    if tile[0] < 0 or tile[0] >= 20: 
+        return True 
+    if tile[1] < 0 or tile[1] >= 20: 
+        return True 
+    return False
 
 class _PlayerState: 
 
-    def __init__(self, prps: set[_PieceRotationPoint], corners: dict[Tile, set[_PieceRotationPoint]], has_played: bool, score: int): 
+    def __init__(self, prps: _PrpSet, corners: dict[Tile, _PrpSet], has_played: bool, score: int): 
         self.prps = prps 
         self.corners = corners 
         self.has_played = has_played 
@@ -357,8 +367,8 @@ class _PlayerState:
 
     def copy(self) -> '_PlayerState': 
         out = _PlayerState.__new__(_PlayerState) 
-        out.prps = set(self.prps) 
-        out.corners = { key: set(value) for key, value in self.corners.items() }
+        out.prps = self.prps 
+        out.corners = dict(self.corners)
         out.has_played = self.has_played 
         out.score = self.score 
 
@@ -369,9 +379,9 @@ class _Player:
     def __init__(self, name: str, id: Color, board: 'Board'): 
         self.name = name 
         self.id = id
-        self._prps = set(_PIECE_ROTATION_POINTS) 
+        self._prps = _PRP_SET_ALL
         self.board = board 
-        self.corners = {} # type: dict[Tile, set[_PieceRotationPoint]]
+        self.corners = {} # type: dict[Tile, _PrpSet]
         self.has_played = False 
         self.score = 0
         self._state = [] # type: list[_PlayerState]
@@ -385,9 +395,9 @@ class _Player:
         out = _Player.__new__(_Player) 
         out.name = self.name 
         out.id = self.id 
-        out._prps = set(self._prps) 
+        out._prps = self._prps 
         out.board = board 
-        out.corners = { key: set(value) for key, value in self.corners.items() }
+        out.corners = dict(self.corners)
         out.has_played = self.has_played 
         out.score = self.score
         out._state = [] 
@@ -399,11 +409,8 @@ class _Player:
         return len(self.corners) > 0 
 
     def push_state(self) -> None: 
-        prps = set(self._prps) 
-        corners = {} 
-
-        for key, value in self.corners.items(): 
-            corners[key] = set(value) 
+        prps = self._prps 
+        corners = dict(self.corners) 
 
         self._state.append(_PlayerState(prps, corners, self.has_played, self.score))
 
@@ -418,15 +425,18 @@ class _Player:
     def remove_piece(self, piece_id: int) -> None: 
         # remove piece permutations from availability list 
         prps = _PRP_WITH_PC_ID[piece_id]
-        self._prps.difference_update(prps)
+        self._prps &= ~prps
 
         remove = [] 
 
         # remove piece permutations from all open corners 
         for key, corner in self.corners.items(): 
-            corner.difference_update(prps) 
-            if len(corner) == 0: 
+            corner &= ~prps 
+            if corner == 0: 
                 remove.append(key)
+            else: 
+                # corner is value, not reference 
+                self.corners[key] = corner 
 
         for r in remove: 
             del self.corners[r]
@@ -442,13 +452,15 @@ class _Player:
         #     find all piece permutations that need one of the filled tiles
         #     and remove them from possible moves 
         for corner, prps in self.corners.items(): 
-            invalid = set() # type: set[_PieceRotationPoint] 
+            invalid = 0 # type: _PrpSet
             for tile in tiles: 
                 rel = (tile[0] - corner[0], tile[1] - corner[1]) 
-                invalid.update(_PRP_WITH_REL_COORD[rel])
-            prps.difference_update(invalid) 
-            if len(prps) == 0: 
+                invalid |= _PRP_WITH_REL_COORD[rel]
+            prps &= ~invalid 
+            if prps == 0: 
                 remove.append(corner) 
+            else: 
+                self.corners[corner] = prps
 
         for r in remove: 
             del self.corners[r]
@@ -457,17 +469,17 @@ class _Player:
         if tile in self.corners or out_of_bounds(tile):
             return
 
-        bad = set() # type: set[_PieceRotationPoint]
+        bad = 0 # type: _PrpSet
 
         for rel in _PRP_REL_COORDS: 
             pt = (rel[0] + tile[0], rel[1] + tile[1])
             if out_of_bounds(pt) or self.board._tiles[pt] != 0:
-                bad.update(_PRP_WITH_REL_COORD[rel])
+                bad |= _PRP_WITH_REL_COORD[rel]
             if not out_of_bounds(pt) and self.board._tiles[pt] == self.id + 1:
-                bad.update(_PRP_WITH_ADJ_REL_COORD[rel])
+                bad |= _PRP_WITH_ADJ_REL_COORD[rel]
 
-        prps = self._prps.difference(bad)
-        if len(prps) > 0:
+        prps = self._prps & ~bad
+        if prps > 0:
             self.corners[tile] = prps
 
 def n_piece_contacts(piece: Piece) -> int: 
@@ -577,11 +589,25 @@ class Board:
     def can_play(self, player: Color) -> bool: 
         return self._players[player].can_play 
     
+    def _remaining_piece_set(self, player: Color) -> set[Piece]: 
+        pieces = set() 
+        prps = self._players[player]._prps 
+
+        while prps != 0: 
+            # get least significant bit
+            prp = (prps & -prps).bit_length() - 1
+            # remove it so the next LSB is another PRP
+            prps ^= 1 << prp
+
+            pieces.add(_PIECE_ROTATION_POINTS[prp].piece_id)
+
+        return pieces
+
     def remaining_pieces(self, player: Color) -> list[Piece]: 
-        return list(set(p.piece_id for p in self._players[player]._prps))
+        return list(self._remaining_piece_set(player))
     
-    def n_remaining_piece(self, player: Color) -> list[Piece]: 
-        return len(p.piece_id for p in self._players[player]._prps)
+    def n_remaining_pieces(self, player: Color) -> int: 
+        return len(self._remaining_piece_set(player))
     
     def color_at(self, tile: Tile) -> Color: 
         return Color(self._tiles[tile])
@@ -592,8 +618,8 @@ class Board:
 
         player = self._players[player] # type: _Player
 
-        prps = player.corners.get(tile, set())
-        return _PIECE_ROTATION_POINTS[prp_id] in prps
+        prps = player.corners.get(tile, 0) # type: _PrpSet
+        return (prps & (1 << prp_id)) != 0
         
     def generate_legal_moves(self, unique: bool=False, for_player: Color=None): 
         if not unique: 
@@ -604,14 +630,21 @@ class Board:
         player = self._players[self.current_player if for_player is None else for_player]
 
         for to_sq, prps in player.corners.items(): 
-            for prp in prps: 
+            while prps != 0: 
+                # get least significant bit
+                prp_id = (prps & -prps).bit_length() - 1
+                # remove it so the next LSB is another PRP
+                prps ^= 1 << prp_id
+
+                prp = _PIECE_ROTATION_POINTS[prp_id]
+
                 moves.append(Move(
                     prp.piece.id, 
                     prp.rotation.rotation, 
                     prp.contact, 
                     to_sq
                 ))
-
+                
         return moves 
 
     def push(self, move: Move) -> None: 
@@ -619,7 +652,7 @@ class Board:
         Legality is assumed to be true. 
         """
         prp = _PIECES[move.piece].rotations[move.rotation].prps[move.contact]
-        self._push_prp(move, prp.id, move.to_square) 
+        self._push_prp(move, prp, move.to_square) 
 
     def pop(self) -> None: 
         state = self._state.pop() 
@@ -637,9 +670,7 @@ class Board:
         for player in self._players: 
             player.pop_state() 
 
-    def _push_prp(self, move: Move, prp_id: int, tile: Tile) -> None: 
-        prp = _PIECE_ROTATION_POINTS[prp_id]
-
+    def _push_prp(self, move: Move, prp: _PieceRotationPoint, tile: Tile) -> None: 
         self.moves.append(move) 
 
         player = self._players[self.current_player]
@@ -723,12 +754,10 @@ class Board:
         for player in self._players: 
             out += f"{player.name}: {int(player.score)} "
 
-            pcs = set() # type: set[Piece]
-            for prp in player._prps: 
-                pcs.add(prp.piece)
+            pcs = [_PIECES[pc] for pc in self._remaining_piece_set(player.id)]
 
             if len(pcs) > 0: 
-                pcs = sorted(list(pcs), key=lambda x: x.id) # type: list[_Piece]
+                pcs = sorted(pcs, key=lambda x: x.id) 
 
                 out += "( "
                 for pc in pcs: 
