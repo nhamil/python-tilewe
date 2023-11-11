@@ -51,7 +51,6 @@ class Tournament:
 
         with multiprocessing.Pool(n_threads, initializer=signal.signal, initargs=(signal.SIGINT, signal.SIG_IGN)) as pool: 
             try:
-                # Run the games asynchronously
                 for winners, scores, _ in pool.imap_unordered(self._play_game, args): 
                     if len(winners) > 0: # at least one player always wins, if none then game crashed 
                         games += 1 
