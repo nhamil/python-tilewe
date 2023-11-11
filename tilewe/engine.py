@@ -1,5 +1,6 @@
 import multiprocessing
-import random 
+import random
+import signal
 import time 
 
 import tilewe 
@@ -48,18 +49,23 @@ class Tournament:
             random.shuffle(order) 
             args.append(order) 
 
-        with multiprocessing.Pool(n_threads) as pool: 
-            for winners, scores, board in pool.imap_unordered(self._play_game, args): 
-                if len(winners) > 0: # at least one player always wins, if none then game crashed 
-                    games += 1 
-                    for p in winners: 
-                        wins[p] += 1 
-                    for p, s in enumerate(scores): 
-                        totals[p] += s
+        with multiprocessing.Pool(n_threads, initializer=signal.signal, initargs=(signal.SIGINT, signal.SIG_IGN)) as pool: 
+            try:
+                for winners, scores, _ in pool.imap_unordered(self._play_game, args): 
+                    if len(winners) > 0: # at least one player always wins, if none then game crashed 
+                        games += 1 
+                        for p in winners: 
+                            wins[p] += 1 
+                        for p, s in enumerate(scores): 
+                            totals[p] += s
 
-                    print(f"Game {games}: \twinners:", winners, "\tscores:", scores, "\ttotal wins:", wins, "\ttotal scores:", totals)
-                else: 
-                    print("Game failed to terminate")
+                        print(f"Game {games}: \twinners:", winners, "\tscores:", scores, "\ttotal wins:", wins, "\ttotal scores:", totals)
+                    else: 
+                        print("Game failed to terminate")
+            except KeyboardInterrupt:
+                print("Caught KeyboardInterrupt, terminating workers")
+                pool.terminate()
+                return
 
     def _play_game(self, player_to_engine: list[int]) -> tuple[list[int], list[int], tilewe.Board]: 
         board = tilewe.Board(n_players=len(self.engines))
