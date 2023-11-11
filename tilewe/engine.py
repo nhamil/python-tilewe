@@ -81,5 +81,4 @@ class Tournament:
             return winners, scores, board
         
         except: 
-            print(f"Exception occurred for game {i}")
             return [], [], board 
