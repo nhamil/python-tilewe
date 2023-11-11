@@ -103,6 +103,7 @@ class _PieceRotation:
         self.tiles = [] # type: list[Tile]
         self.contacts = [] # type: list[Tile]
         self.prps = {} # type: dict[Tile, _PieceRotationPoint]
+        self.n_corners = 0
 
         self.contact_shape = np.zeros_like(shape, dtype=np.uint8)
         H,W = shape.shape
@@ -127,6 +128,8 @@ class _PieceRotation:
 
         for coord in self.contacts: 
             self.prps[coord] = _PieceRotationPoint(name, self, coord) 
+        
+        self.n_corners = len(list(self.prps.values())[0].corners)
 
 class _PieceRotationPoint: 
 
@@ -352,22 +355,44 @@ class _PlayerState:
         self.has_played = has_played 
         self.score = score
 
+    def copy(self) -> '_PlayerState': 
+        out = _PlayerState.__new__(_PlayerState) 
+        out.prps = set(self.prps) 
+        out.corners = { key: set(value) for key, value in self.corners.items() }
+        out.has_played = self.has_played 
+        out.score = self.score 
+
+        return out 
+
 class _Player: 
 
-    def __init__(self, name: str, id: int, board: 'Board'): 
+    def __init__(self, name: str, id: Color, board: 'Board'): 
         self.name = name 
         self.id = id
         self._prps = set(_PIECE_ROTATION_POINTS) 
         self.board = board 
         self.corners = {} # type: dict[Tile, set[_PieceRotationPoint]]
         self.has_played = False 
-        self._state = [] # type: list[_PlayerState]
         self.score = 0
+        self._state = [] # type: list[_PlayerState]
 
         self.add_corner(A01) 
         self.add_corner(A20) 
         self.add_corner(T01) 
         self.add_corner(T20) 
+
+    def copy_current_state(self, board: 'Board') -> '_Player': 
+        out = _Player.__new__(_Player) 
+        out.name = self.name 
+        out.id = self.id 
+        out._prps = set(self._prps) 
+        out.board = board 
+        out.corners = { key: set(value) for key, value in self.corners.items() }
+        out.has_played = self.has_played 
+        out.score = self.score
+        out._state = [] 
+
+        return out 
 
     @property 
     def can_play(self) -> bool: 
@@ -445,6 +470,21 @@ class _Player:
         if len(prps) > 0:
             self.corners[tile] = prps
 
+def n_piece_contacts(piece: Piece) -> int: 
+    return len(_PIECES[piece].rotations[0].contacts)
+
+def n_piece_tiles(piece: Piece) -> int: 
+    return len(_PIECES[piece].rotations[0].tiles)
+
+def n_piece_corners(piece: Piece) -> int: 
+    return _PIECES[piece].rotations[0].n_corners
+
+def piece_tiles(piece: Piece, rotation: Rotation, contact: Tile=None) -> list[Tile]: 
+    if contact is None: 
+        return list(_PIECES[piece].rotations[rotation].tiles)
+    else: 
+        return list(_PIECES[piece].rotations[rotation].prps[contact].tiles)
+
 class Move: 
 
     def __init__(self, piece: Piece, rotation: Rotation, contact: Tile, to_square: Tile): 
@@ -486,10 +526,23 @@ class Board:
         for i in range(n_players): 
             self._players.append(_Player(chars[i], i, self))
 
-        self.current_player = 0 # type: int 
+        self.current_player = BLUE # type: Color 
         self.finished = False 
         self.ply = 0 
         self.moves = [] # type: list[Move]
+
+    def copy_current_state(self) -> 'Board': 
+        out = Board.__new__(Board) 
+        out._state = [] 
+        out._tiles = np.copy(self._tiles)
+        out._n_players = self._n_players 
+        out._players = [p.copy_current_state(out) for p in self._players]
+        out.current_player = self.current_player
+        out.finished = self.finished 
+        out.ply = self.ply 
+        out.moves = [] 
+
+        return out 
 
     @property
     def n_players(self) -> int: 
@@ -512,10 +565,28 @@ class Board:
                 best = [i]
         return best 
 
-    def color_at(self, tile: Tile) -> int: 
-        return int(self._tiles[tile])
+    def player_corners(self, player: Color) -> list[Tile]: 
+        return list(self._players[player].corners.keys())
 
-    def _is_legal(self, prp_id: int, tile: Tile, player: int=None) -> bool: 
+    def n_player_corners(self, player: Color) -> int: 
+        return len(self._players[player].corners)
+
+    def player_score(self, player: Color) -> int: 
+        return self._players[player].score 
+
+    def can_play(self, player: Color) -> bool: 
+        return self._players[player].can_play 
+    
+    def remaining_pieces(self, player: Color) -> list[Piece]: 
+        return list(set(p.piece_id for p in self._players[player]._prps))
+    
+    def n_remaining_piece(self, player: Color) -> list[Piece]: 
+        return len(p.piece_id for p in self._players[player]._prps)
+    
+    def color_at(self, tile: Tile) -> Color: 
+        return Color(self._tiles[tile])
+
+    def _is_legal(self, prp_id: int, tile: Tile, player: Color=None) -> bool: 
         if player is None: 
             player = self.current_player 
 
@@ -524,13 +595,13 @@ class Board:
         prps = player.corners.get(tile, set())
         return _PIECE_ROTATION_POINTS[prp_id] in prps
         
-    def generate_legal_moves(self, unique: bool=False): 
+    def generate_legal_moves(self, unique: bool=False, for_player: Color=None): 
         if not unique: 
             raise Exception("non-unique rotations not supported yet") 
         
         moves = [] # type: list[Move] 
 
-        player = self._players[self.current_player]
+        player = self._players[self.current_player if for_player is None else for_player]
 
         for to_sq, prps in player.corners.items(): 
             for prp in prps: 
@@ -562,7 +633,7 @@ class Board:
         self.finished = False 
         self.ply -= 1 
 
-        # pop player state 
+        # player state is stored per player 
         for player in self._players: 
             player.pop_state() 
 
@@ -602,11 +673,6 @@ class Board:
 
         player.has_played = True 
         player.score += len(prp.tiles)
-
-        # # # TODO skip players with no move 
-        # self.current_player += 1 
-        # if self.current_player >= self._n_players: 
-        #     self.current_player = 0  
 
         # inc turn and make sure player can move 
         self.ply += 1
@@ -657,7 +723,7 @@ class Board:
         for player in self._players: 
             out += f"{player.name}: {int(player.score)} "
 
-            pcs = set() 
+            pcs = set() # type: set[Piece]
             for prp in player._prps: 
                 pcs.add(prp.piece)
 
