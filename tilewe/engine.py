@@ -82,7 +82,7 @@ class MaximizeMoveDifferenceEngine(Engine):
             board.push(m) 
             total = 0
             for color in range(board.n_players): 
-                n_moves = len(board.generate_legal_moves(unique=True, for_player=color))
+                n_moves = board.n_legal_moves(unique=True, for_player=color)
                 total += n_moves * (1 if color == player else -1)
             board.pop() 
             return total

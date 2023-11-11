@@ -621,9 +621,21 @@ class Board:
         prps = player.corners.get(tile, 0) # type: _PrpSet
         return (prps & (1 << prp_id)) != 0
         
+    def n_legal_moves(self, unique: bool=False, for_player: Color=None): 
+        if not unique: 
+            raise Exception("Non-unique rotations not supported yet") 
+        
+        player = self._players[self.current_player if for_player is None else for_player]
+        total = 0 
+
+        for prps in player.corners.values(): 
+            total += prps.bit_count() 
+
+        return total 
+
     def generate_legal_moves(self, unique: bool=False, for_player: Color=None): 
         if not unique: 
-            raise Exception("non-unique rotations not supported yet") 
+            raise Exception("Non-unique rotations not supported yet") 
         
         moves = [] # type: list[Move] 
 
