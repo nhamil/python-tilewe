@@ -16,7 +16,7 @@ class Tournament:
 
     Example
     -------
-    >>> tournament = tilewe.engine.Tournament([
+    >>> tournament = tilewe.tournament.Tournament([
         tilewe.engine.LargestPieceEngine(), 
         tilewe.engine.MostOpenCornersEngine(), 
         tilewe.engine.MaximizeMoveDifferenceEngine(), 
