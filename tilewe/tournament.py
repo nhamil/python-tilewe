@@ -71,7 +71,9 @@ class Tournament:
             raise Exception("Must use at least one thread")
         if players_per_game < 1 or players_per_game > 4:
             raise Exception("Must have 1 to 4 players per game")
-        if move_seconds <= 0:
+        
+        self.move_seconds = move_seconds if move_seconds is not None else self._seconds
+        if self.move_seconds <= 0:
             raise Exception("Must allow greater than 0 seconds per move")
         
         # initialize trackers and game controls
@@ -81,7 +83,6 @@ class Tournament:
         games = [0 for _ in range(N)]
         elos = [0 for _ in range(N)]
         totals = [0 for _ in range(N)]
-        self.move_seconds = move_seconds if move_seconds is not None else self._seconds
 
         # helper for printing out engine rank summaries
         def print_engine_rankings():
