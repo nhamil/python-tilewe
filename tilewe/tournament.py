@@ -69,7 +69,7 @@ class Tournament:
             raise Exception("Must play at least one game")
         if n_threads <= 0:
             raise Exception("Must use at least one thread")
-        if players_per_game <= 0:
+        if players_per_game < 1 or players_per_game > 4:
             raise Exception("Must have at least one player per game")
         if move_seconds <= 0:
             raise Exception("Must allow greater than 0 seconds per move")
