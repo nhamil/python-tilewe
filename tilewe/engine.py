@@ -1,5 +1,6 @@
 import random
 import time 
+import math
 
 import tilewe 
 
@@ -34,11 +35,29 @@ class Engine:
     The following engines implement fairly simple strategies and can
     be used for testing your Engine against in tournaments.
     Approximate strength ordering:
+        WallCrawlerEngine, very weak
         RandomEngine, very weak
         MostOpenCornersEngine, weak
         LargestPieceEngine, moderate
         MaximizeMoveDifferenceEngine, surprisingly strong
 """
+
+class MoveExecutor(object):
+    """
+    Helper for testing board state after applying a move when
+    you intend to pop that move afterwards. See example usage
+    in the Sample Engines below.
+    """
+    
+    def __init__(self, board: tilewe.Board, move: tilewe.Move):
+        self.board = board
+        self.move = move
+    
+    def __enter__(self):
+        self.board.push(self.move)
+
+    def __exit__(self, *args):
+        self.board.pop()
 
 class RandomEngine(Engine): 
     """
@@ -70,10 +89,9 @@ class MostOpenCornersEngine(Engine):
         player = board.current_player
 
         def corners_after_move(m: tilewe.Move) -> int: 
-            board.push(m) 
-            corners = board.n_player_corners(player) 
-            board.pop() 
-            return corners
+            with MoveExecutor(board, m):
+                corners = board.n_player_corners(player) 
+                return corners
 
         return max(moves, key=corners_after_move)
 
@@ -123,12 +141,60 @@ class MaximizeMoveDifferenceEngine(Engine):
         player = board.current_player
 
         def eval_after_move(m: tilewe.Move) -> int: 
-            board.push(m) 
-            total = 0
-            for color in range(board.n_players): 
-                n_moves = board.n_legal_moves(unique=True, for_player=color)
-                total += n_moves * (1 if color == player else -1)
-            board.pop() 
-            return total
+            with MoveExecutor(board, m):
+                total = 0
+                for color in range(board.n_players): 
+                    n_moves = board.n_legal_moves(unique=True, for_player=color)
+                    total += n_moves * (1 if color == player else -1)
+                return total
 
         return max(moves, key=eval_after_move)
+    
+class WallCrawlerEngine(Engine):
+    """
+    Evalutes tile ownership after each legal move and selects the move that maximizes
+    ownership of tiles along the edges of the board/further from the center of the board.
+    Not very good, honestly worse than random, but demonstrates tile eval techniques.
+    """
+
+    def __init__(self, name: str="WallCrawler"): 
+        super().__init__(name)
+
+    TILE_WEIGHTS = [
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 
+        1,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,1, 
+        1,0.9,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.9,1, 
+        1,0.9,0.75,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.75,0.9,1, 
+        1,0.9,0.75,0.6,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.6,0.75,0.9,1, 
+        1,0.9,0.75,0.6,0.5,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.5,0.6,0.75,0.9,1, 
+        1,0.9,0.75,0.6,0.5,0.4,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.4,0.5,0.6,0.75,0.9,1, 
+        1,0.9,0.75,0.6,0.5,0.4,0.3,0.25,0.25,0.25,0.25,0.25,0.25,0.3,0.4,0.5,0.6,0.75,0.9,1, 
+        1,0.9,0.75,0.6,0.5,0.4,0.3,0.25,0.25,0.25,0.25,0.25,0.25,0.3,0.4,0.5,0.6,0.75,0.9,1, 
+        1,0.9,0.75,0.6,0.5,0.4,0.3,0.25,0.1,0.1,0.1,0.1,0.25,0.3,0.4,0.5,0.6,0.75,0.9,1, 
+        1,0.9,0.75,0.6,0.5,0.4,0.3,0.25,0.1,0,0,0.1,0.25,0.3,0.4,0.5,0.6,0.75,0.9,1, 
+        1,0.9,0.75,0.6,0.5,0.4,0.3,0.25,0.1,0.1,0.1,0.1,0.25,0.3,0.4,0.5,0.6,0.75,0.9,1, 
+        1,0.9,0.75,0.6,0.5,0.4,0.3,0.25,0.25,0.25,0.25,0.25,0.25,0.3,0.4,0.5,0.6,0.75,0.9,1, 
+        1,0.9,0.75,0.6,0.5,0.4,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.4,0.5,0.6,0.75,0.9,1, 
+        1,0.9,0.75,0.6,0.5,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.5,0.6,0.75,0.9,1, 
+        1,0.9,0.75,0.6,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.6,0.75,0.9,1, 
+        1,0.9,0.75,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.6,0.75,0.9,1, 
+        1,0.9,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.9,1, 
+        1,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,0.9,1, 
+        1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+    ]
+
+    def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move: 
+
+        def get_owned_tiles_list(board: tilewe.Board, player: tilewe.Color):
+            ownership = []
+            for tile in tilewe.TILES:
+                ownership.append(1 if board.color_at(tile) == player else 0)
+            return ownership   
+
+        def tile_score_after_move(move: tilewe.Move) -> int: 
+            with MoveExecutor(board, move):
+                owned_tiles = get_owned_tiles_list(board, board.current_player)
+                return -sum(t[0] * t[1] for t in zip(owned_tiles, self.TILE_WEIGHTS))
+
+        moves = board.generate_legal_moves(unique=True)
+        return max(moves, key=tile_score_after_move)
