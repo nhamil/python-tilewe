@@ -97,12 +97,12 @@ class Tournament:
                 for winners, scores, board, player_to_engine in pool.imap_unordered(self._play_game, args): 
                     if len(winners) > 0: # at least one player always wins, if none then game crashed 
                         total_games += 1 
+                        for p in player_to_engine:
+                            games[p] += 1
                         for p in winners: 
                             wins[p] += 1 
                         for p, s in enumerate(scores): 
                             totals[p] += s
-                            if s > 0:
-                                games[p] += 1
 
                         # get the names and scores for involved players
                         game_players = [player_to_engine[i] for i in range(board.n_players)]
@@ -114,7 +114,7 @@ class Tournament:
                         if board.n_players > 1:
                             player_elos = [elos[i] for i in game_players]
                             delta_elos = compute_elo_adjustment_n(player_elos, player_scores)
-                            for player, index in zip(game_players, range(len(game_players))):
+                            for index, player in enumerate(game_players):
                                 elos[player] += delta_elos[index]
 
                         # output match results
@@ -128,8 +128,9 @@ class Tournament:
                         if total_games % max(5, n_threads) == 0:
                             print(f"\n{'Rank':4} {'Name':24} {'Elo':>5} {'Games':>6} {'Score':>10} {'Wins':>6} {'Win Rate':>9}")
                             ranked_engines = sorted(range(len(self.engines)), key=lambda x: -elos[x])
-                            for engine, rank in zip(ranked_engines, range(len(self.engines))):
-                                print(f"{rank:>4d} {self.engines[engine].name:24.24} {elos[engine]:>5.0f} {games[engine]:>6d} {totals[engine]:>10d} {wins[engine]:>6d} {(wins[engine]/games[engine]*100):>8.2f}%")
+                            for rank, engine in enumerate(ranked_engines):
+                                win_rate = f"{(wins[engine]/games[engine]*100):>8.2f}%" if games[engine] > 0 else f"{'-':>9}"
+                                print(f"{rank:>4d} {self.engines[engine].name:24.24} {elos[engine]:>5.0f} {games[engine]:>6d} {totals[engine]:>10d} {wins[engine]:>6d} {win_rate}")
                             print("")
                     else: 
                         print("Game failed to terminate")
@@ -138,7 +139,7 @@ class Tournament:
                 pool.terminate()
                 return
 
-    def _play_game(self, player_to_engine: list[int]) -> tuple[list[int], list[int], tilewe.Board, dict[int, int]]:
+    def _play_game(self, player_to_engine: list[int]) -> tuple[list[int], list[int], tilewe.Board, list[int]]:
         """
         An individual game launched by the `play` wrapper.
         Plays one game given the list of engines and returns results.
