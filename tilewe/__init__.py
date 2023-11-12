@@ -188,7 +188,8 @@ def _create_piece(name: str, shape: list[list[int]]) -> Piece:
     def add(suffix: str, arr: np.ndarray): 
         rot = None 
         unique = True 
-        true_rot = len(pc.rotations) # assume rotation is unique 
+        cur_rot = len(pc.rotations)
+        true_rot = cur_rot # assume rotation is unique 
 
         for x in pc.rotations: 
             if x.shape.shape == arr.shape and np.all(x.shape == arr): 
@@ -205,7 +206,7 @@ def _create_piece(name: str, shape: list[list[int]]) -> Piece:
         pc.unique.append(unique) 
         pc.true_rot.append(true_rot) 
         pc.true_rot_for.append([]) 
-        pc.true_rot_for[true_rot].append(rot.rotation)
+        pc.true_rot_for[true_rot].append(cur_rot)
 
     # original shape, north
     cur = np.array(shape, dtype=np.uint8)[::-1] 
@@ -533,6 +534,14 @@ class Move:
             return self.is_equal(value) 
         else: 
             return False 
+        
+    def to_unique(self) -> 'Move': 
+        return Move(
+            self.piece, 
+            _PIECES[self.piece].true_rot[self.rotation], 
+            self.contact, 
+            self.to_square     
+        )
 
 class _BoardState: 
 
@@ -685,29 +694,46 @@ class Board:
 
         return total 
 
-    def generate_legal_moves(self, unique: bool=False, for_player: Color=None): 
-        if not unique: 
-            raise Exception("Non-unique rotations not supported yet") 
-        
+    def generate_legal_moves(self, unique: bool=True, for_player: Color=None): 
         moves = [] # type: list[Move] 
 
         player = self._players[self.current_player if for_player is None else for_player]
 
-        for to_sq, prps in player.corners.items(): 
-            while prps != 0: 
-                # get least significant bit
-                prp_id = (prps & -prps).bit_length() - 1
-                # remove it so the next LSB is another PRP
-                prps ^= 1 << prp_id
+        # duplicate for loop so that we don't check the if statement for every permutation
+        if unique: 
+            for to_sq, prps in player.corners.items(): 
+                while prps != 0: 
+                    # get least significant bit
+                    prp_id = (prps & -prps).bit_length() - 1
+                    # remove it so the next LSB is another PRP
+                    prps ^= 1 << prp_id
 
-                prp = _PIECE_ROTATION_POINTS[prp_id]
+                    prp = _PIECE_ROTATION_POINTS[prp_id]
 
-                moves.append(Move(
-                    prp.piece.id, 
-                    prp.rotation.rotation, 
-                    prp.contact, 
-                    to_sq
-                ))
+                    moves.append(Move(
+                        prp.piece.id, 
+                        prp.rotation.rotation, 
+                        prp.contact, 
+                        to_sq
+                    ))
+        else: 
+            for to_sq, prps in player.corners.items(): 
+                while prps != 0: 
+                    # get least significant bit
+                    prp_id = (prps & -prps).bit_length() - 1
+                    # remove it so the next LSB is another PRP
+                    prps ^= 1 << prp_id
+
+                    prp = _PIECE_ROTATION_POINTS[prp_id]
+
+                    # include permutations with non-unique rotations/flips
+                    for rot in prp.piece.true_rot_for[prp.rotation.rotation]: 
+                        moves.append(Move(
+                            prp.piece.id, 
+                            rot, 
+                            prp.contact, 
+                            to_sq
+                        ))
                 
         return moves 
 

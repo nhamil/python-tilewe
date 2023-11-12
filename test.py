@@ -159,5 +159,22 @@ class TestTilewe(unittest.TestCase):
             to_square=tilewe.T20
         )))
 
+    def test_nonunique_move_gen_legal(self): 
+        board = tilewe.Board(4) 
+
+        moves = board.generate_legal_moves(unique=False) 
+
+        for move in moves: 
+            self.assertTrue(board.is_legal(move))
+
+    def test_nonunique_move_gen_has_unique_move(self): 
+        board = tilewe.Board(4) 
+
+        unique = board.generate_legal_moves(unique=True) 
+        moves = board.generate_legal_moves(unique=False) 
+
+        for move in moves: 
+            self.assertTrue(move.to_unique() in unique)
+
 if __name__ == '__main__': 
     unittest.main() 
