@@ -75,14 +75,21 @@ class Tournament:
             raise Exception("Must allow greater than 0 seconds per move")
         
         # initialize trackers and game controls
+        N = len(self.engines)
         total_games = 0
-        wins = [0 for _ in range(len(self.engines))]
-        games = [0 for _ in range(len(self.engines))]
-        elos = [0 for _ in range(len(self.engines))]
-        totals = [0 for _ in range(len(self.engines))]
+        wins = [0 for _ in range(N)]
+        games = [0 for _ in range(N)]
+        elos = [0 for _ in range(N)]
+        totals = [0 for _ in range(N)]
         self.move_seconds = move_seconds if move_seconds is not None else self._seconds
 
-        N = len(self.engines)
+        # helper for printing out engine rank summaries
+        def print_engine_rankings():
+            print(f"\n{'Rank':4} {'Name':24} {'Elo':>5} {'Games':>6} {'Score':>10} {'Wins':>6} {'Win Rate':>9}")
+            ranked_engines = sorted(range(N), key=lambda x: -elos[x])
+            for rank, engine in enumerate(ranked_engines):
+                win_rate = f"{(wins[engine]/games[engine]*100):>8.2f}%" if games[engine] > 0 else f"{'-':>9}"
+                print(f"{rank:>4d} {self.engines[engine].name:24.24} {elos[engine]:>5.0f} {games[engine]:>6d} {totals[engine]:>10d} {wins[engine]:>6d} {win_rate}")
 
         # prepare turn orders for the various games
         args = [] 
@@ -124,16 +131,13 @@ class Tournament:
                             print(board)
                             print("")
 
-                        # every match chunk (or minimum 5 matches) output rankings
-                        if total_games % max(5, n_threads) == 0:
-                            print(f"\n{'Rank':4} {'Name':24} {'Elo':>5} {'Games':>6} {'Score':>10} {'Wins':>6} {'Win Rate':>9}")
-                            ranked_engines = sorted(range(len(self.engines)), key=lambda x: -elos[x])
-                            for rank, engine in enumerate(ranked_engines):
-                                win_rate = f"{(wins[engine]/games[engine]*100):>8.2f}%" if games[engine] > 0 else f"{'-':>9}"
-                                print(f"{rank:>4d} {self.engines[engine].name:24.24} {elos[engine]:>5.0f} {games[engine]:>6d} {totals[engine]:>10d} {wins[engine]:>6d} {win_rate}")
+                        # output rankings summary every match chunk (or minimum 10 matches)
+                        if total_games % max(10, n_threads) == 0 and total_games != n_games:
+                            print_engine_rankings()
                             print("")
                     else: 
                         print("Game failed to terminate")
+                print_engine_rankings()
             except KeyboardInterrupt:
                 print("Caught KeyboardInterrupt, terminating workers")
                 pool.terminate()
