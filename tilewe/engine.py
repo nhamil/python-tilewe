@@ -79,7 +79,9 @@ class LargestPieceEngine(Engine):
         Piece with the most squares (i.e. most points)
         Piece that introduces the most corners
         Piece that has the most contacts
-    Moderately strong from a greedy point hungry perspective.
+    Moderately strong from a greedy point hungry perspective. Since
+    ties are common and result in a random move choice across the
+    ties, it's effectively a greedy form of RandomEngine.
     """
 
     def __init__(self, name: str="LargestPiece"):
