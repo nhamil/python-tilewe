@@ -1,5 +1,6 @@
 import random
 import time 
+import math
 
 import tilewe 
 
@@ -34,8 +35,8 @@ class Engine:
     The following engines implement fairly simple strategies and can
     be used for testing your Engine against in tournaments.
     Approximate strength ordering:
-        RandomEngine, very weak
         WallCrawlerEngine, very weak
+        RandomEngine, very weak
         MostOpenCornersEngine, weak
         LargestPieceEngine, moderate
         MaximizeMoveDifferenceEngine, surprisingly strong
@@ -153,13 +154,11 @@ class WallCrawlerEngine(Engine):
     """
     Evalutes tile ownership after each legal move and selects the move that maximizes
     ownership of tiles along the edges of the board/further from the center of the board.
-    Not very good, similar weakness to random.
+    Not very good, honestly worse than random, but demonstrates tile eval techniques.
     """
 
     def __init__(self, name: str="WallCrawler"): 
         super().__init__(name)
-        self.nodes_searched = 0
-        self.start_at = self.end_at
 
     TILE_WEIGHTS = [
         1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, 
@@ -185,7 +184,6 @@ class WallCrawlerEngine(Engine):
     ]
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move: 
-        self.nodes_searched = 0
 
         def get_owned_tiles_list(board: tilewe.Board, player: tilewe.Color):
             ownership = []
