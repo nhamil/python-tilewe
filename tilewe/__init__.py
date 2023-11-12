@@ -94,6 +94,8 @@ class _Piece:
         self.id = id 
         self.rotations = [] # type: list[_PieceRotation]
         self.unique = [] # type: list[bool]
+        self.true_rot = [] # type: list[Rotation]
+        self.true_rot_for = [] # type: list[list[Rotation]]
 
 class _PieceRotation: 
 
@@ -186,11 +188,13 @@ def _create_piece(name: str, shape: list[list[int]]) -> Piece:
     def add(suffix: str, arr: np.ndarray): 
         rot = None 
         unique = True 
+        true_rot = len(pc.rotations) # assume rotation is unique 
 
         for x in pc.rotations: 
             if x.shape.shape == arr.shape and np.all(x.shape == arr): 
                 rot = x 
                 unique = False 
+                true_rot = x.rotation
                 break 
 
         if rot is None: 
@@ -199,6 +203,9 @@ def _create_piece(name: str, shape: list[list[int]]) -> Piece:
         f_names.append(suffix + "f")
         pc.rotations.append(rot) 
         pc.unique.append(unique) 
+        pc.true_rot.append(true_rot) 
+        pc.true_rot_for.append([]) 
+        pc.true_rot_for[true_rot].append(rot.rotation)
 
     # original shape, north
     cur = np.array(shape, dtype=np.uint8)[::-1] 
@@ -635,7 +642,37 @@ class Board:
 
         prps = player.corners.get(tile, 0) # type: _PrpSet
         return (prps & (1 << prp_id)) != 0
+
+    def is_legal(self, move: Move, for_player: Color=None) -> bool: 
+        player = self._players[self.current_player if for_player is None else for_player]
+
+        # target tile must be empty 
+        if move.to_square is None or self.color_at(move.to_square) != NO_COLOR: 
+            return False 
         
+        # piece must be real
+        if move.piece is None or move.piece >= len(_PIECES) or move.piece < 0: 
+            return False 
+        pc = _PIECES[move.piece]
+
+        # rotation must be real 
+        if move.rotation is None or move.rotation >= len(ROTATIONS) or move.rotation < 0: 
+            return False 
+        pc_rot = pc.rotations[move.rotation] 
+
+        # piece rotation must have the contact
+        prp = pc_rot.prps.get(move.contact, None)
+        if prp is None: 
+            return False 
+
+        # available permutations at the requested tile
+        prps = player.corners.get(move.to_square, None)
+        if prps is None: 
+            return False 
+
+        # permutation must fit at the corner square
+        return (prps & prp.as_set) != 0
+
     def n_legal_moves(self, unique: bool=False, for_player: Color=None): 
         if not unique: 
             raise Exception("Non-unique rotations not supported yet") 
