@@ -2,8 +2,9 @@ import multiprocessing
 
 import tilewe 
 import tilewe.engine
+import tilewe.tournament
 
-tournament = tilewe.engine.Tournament([
+tournament = tilewe.tournament.Tournament([
     tilewe.engine.LargestPieceEngine(), 
     tilewe.engine.MostOpenCornersEngine(), 
     tilewe.engine.MaximizeMoveDifferenceEngine(), 
