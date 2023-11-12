@@ -1,3 +1,4 @@
+import copy 
 import unittest 
 
 import tilewe 
@@ -181,6 +182,40 @@ class TestTilewe(unittest.TestCase):
         
         self.assertTrue(board.n_legal_moves(unique=True) == len(board.generate_legal_moves(unique=True)))
         self.assertTrue(board.n_legal_moves(unique=False) == len(board.generate_legal_moves(unique=False)))
+
+    def test_null_move_1_player(self): 
+        board = tilewe.Board(1) 
+
+        self.assertEqual(board.current_player, tilewe.BLUE)
+        board.push_null()
+        self.assertEqual(board.current_player, tilewe.BLUE)
+        board.pop_null() 
+        self.assertEqual(board.current_player, tilewe.BLUE)
+
+    def test_null_move_2_player(self): 
+        board = tilewe.Board(2) 
+
+        self.assertEqual(board.current_player, tilewe.BLUE)
+        board.push_null()
+        self.assertEqual(board.current_player, tilewe.YELLOW)
+        board.pop_null() 
+        self.assertEqual(board.current_player, tilewe.BLUE)
+
+    def test_null_move_3_player(self): 
+        board = tilewe.Board(3) 
+
+        self.assertEqual(board.current_player, tilewe.BLUE)
+        board.push_null()
+        self.assertEqual(board.current_player, tilewe.YELLOW)
+        board.push_null()
+        self.assertEqual(board.current_player, tilewe.RED)
+        board.push_null()
+        self.assertEqual(board.current_player, tilewe.BLUE)
+        board.pop_null() 
+        board.pop_null() 
+        self.assertEqual(board.current_player, tilewe.YELLOW)
+        board.pop_null() 
+        self.assertEqual(board.current_player, tilewe.BLUE)
 
 if __name__ == '__main__': 
     unittest.main() 
