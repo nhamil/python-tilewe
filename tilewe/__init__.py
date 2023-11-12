@@ -682,15 +682,25 @@ class Board:
         # permutation must fit at the corner square
         return (prps & prp.as_set) != 0
 
-    def n_legal_moves(self, unique: bool=False, for_player: Color=None): 
-        if not unique: 
-            raise Exception("Non-unique rotations not supported yet") 
-        
+    def n_legal_moves(self, unique: bool=True, for_player: Color=None): 
         player = self._players[self.current_player if for_player is None else for_player]
         total = 0 
 
-        for prps in player.corners.values(): 
-            total += prps.bit_count() 
+        if unique: 
+            for prps in player.corners.values(): 
+                total += prps.bit_count() 
+        else: 
+            for prps in player.corners.values(): 
+                while prps != 0: 
+                    # get least significant bit
+                    prp_id = (prps & -prps).bit_length() - 1
+                    # remove it so the next LSB is another PRP
+                    prps ^= 1 << prp_id
+
+                    prp = _PIECE_ROTATION_POINTS[prp_id]
+
+                    # include all rotations that are equivalent to this PRP
+                    total += len(prp.piece.true_rot_for[prp.rotation.rotation]) 
 
         return total 
 

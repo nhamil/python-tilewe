@@ -176,5 +176,11 @@ class TestTilewe(unittest.TestCase):
         for move in moves: 
             self.assertTrue(move.to_unique() in unique)
 
+    def test_n_legal_moves(self): 
+        board = tilewe.Board(4) 
+        
+        self.assertTrue(board.n_legal_moves(unique=True) == len(board.generate_legal_moves(unique=True)))
+        self.assertTrue(board.n_legal_moves(unique=False) == len(board.generate_legal_moves(unique=False)))
+
 if __name__ == '__main__': 
     unittest.main() 
