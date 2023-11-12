@@ -72,6 +72,8 @@ COLORS = [
     BLUE, YELLOW, RED, GREEN
 ] = [Color(x) for x in range(4)]
 
+NO_COLOR = -1 # type: Color 
+
 COLOR_NAMES = [
     'blue', 'yellow', 'red', 'green'
 ]
@@ -623,7 +625,7 @@ class Board:
         return len(self._remaining_piece_set(player))
     
     def color_at(self, tile: Tile) -> Color: 
-        return Color(self._tiles[tile])
+        return Color(self._tiles[tile] - 1)
 
     def _is_legal(self, prp_id: int, tile: Tile, player: Color=None) -> bool: 
         if player is None: 
