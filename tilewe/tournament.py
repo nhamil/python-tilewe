@@ -152,13 +152,13 @@ class Tournament:
         Returns
         -------
         winners : list[int]
-            A list of the engine indices that won the match
+            The list of the engine indices that won the match
         scores : list[int]
-            A list of the scores earned for each engine (even those not in this match, as 0)
+            The ist of the scores earned for each engine (even those not in this match, as 0)
         board : tilewe.Board
             A reference to the game board in it's finished state
-        player_to_engine : dict[int, int]
-            A mapping of player position (i.e. turn order) to engine index for this match
+        player_to_engine : list[int]
+            The list of engines that played in the match, indicating turn order
         """
 
         board = tilewe.Board(n_players=len(player_to_engine))
