@@ -747,6 +747,15 @@ class Board:
                 
         return moves 
 
+    def push_null(self) -> None: 
+        self._state.append(_BoardState(self._incr_player(), None))
+
+    def pop_null(self) -> None: 
+        state = self._state.pop() 
+        self.current_player = state.cur_player 
+        self.finished = False 
+        self.ply -= 1 
+
     def push(self, move: Move) -> None: 
         """
         Legality is assumed to be true. 
@@ -769,6 +778,25 @@ class Board:
         # player state is stored per player 
         for player in self._players: 
             player.pop_state() 
+
+    def _incr_player(self) -> Color: 
+        self.ply += 1
+        cur_turn = self.current_player
+        while True: 
+            self.current_player += 1
+            if self.current_player >= len(self._players): 
+                self.current_player = 0 
+            if self._players[self.current_player].can_play: 
+                break 
+
+            # looped all the way back to same player 
+            # no player can play, game is done
+            if cur_turn == self.current_player: 
+                self.finished = True 
+                break 
+            
+        # return last player 
+        return cur_turn
 
     def _push_prp(self, move: Move, prp: _PieceRotationPoint, tile: Tile) -> None: 
         self.moves.append(move) 
@@ -806,20 +834,7 @@ class Board:
         player.score += len(prp.tiles)
 
         # inc turn and make sure player can move 
-        self.ply += 1
-        cur_turn = self.current_player
-        while True: 
-            self.current_player += 1
-            if self.current_player >= len(self._players): 
-                self.current_player = 0 
-            if self._players[self.current_player].can_play: 
-                break 
-
-            # looped all the way back to same player 
-            # no player can play, game is done
-            if cur_turn == self.current_player: 
-                self.finished = True 
-                break 
+        cur_turn = self._incr_player() 
 
         self._state.append(_BoardState(cur_turn, tiles))
 
