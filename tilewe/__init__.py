@@ -788,6 +788,8 @@ class Board:
                 for pc in pcs: 
                     out += pc.name + " " 
                 out += ")\n"
+            else:
+                out += "( )\n"
 
         out += f"Finished: {self.finished}"
         if self.finished: 
