@@ -25,12 +25,12 @@ def elo_win_probability(elo1: float, elo2: float, C: int=400):
     """
     
     # raw
-    # qa = math.pow(10, elo1 / 400)
-    # qb = math.pow(10, elo2 / 400)
+    # qa = math.pow(10, elo1 / C)
+    # qb = math.pow(10, elo2 / C)
     # return min(max(qa / (qa + qb), 0), 1)
 
     # simplified
-    return min(max(1.0 / (1.0 + math.pow(10, -(elo1 - elo2) / 400)), 0), 1)
+    return min(max(1.0 / (1.0 + math.pow(10, -(elo1 - elo2) / C)), 0), 1)
 
 def compute_elo_adjustment_2(elo1: float, elo2: float, outcome: float, K: int = 32):
     """
