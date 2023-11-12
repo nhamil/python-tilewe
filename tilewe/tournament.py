@@ -116,7 +116,6 @@ class Tournament:
                             delta_elos = compute_elo_adjustment_n(player_elos, player_scores)
                             for player, index in zip(game_players, range(len(game_players))):
                                 elos[player] += delta_elos[index]
-                            # new_elos = [elos[i] for i in game_players]
 
                         # output match results
                         out_names = ' '.join([f"{i:14.14}" for i in player_names])
