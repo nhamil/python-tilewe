@@ -86,11 +86,12 @@ class Tournament:
 
         # helper for printing out engine rank summaries
         def print_engine_rankings():
-            print(f"\n{'Rank':4} {'Name':24} {'Elo':>5} {'Games':>6} {'Score':>10} {'Wins':>6} {'Win Rate':>9}")
+            print(f"\n{'Rank':4} {'Name':24} {'Elo':>5} {'Games':>6} {'Score':>10} {'Avg Score':>10} {'Wins':>6} {'Win Rate':>9}")
             ranked_engines = sorted(range(N), key=lambda x: -elos[x])
             for rank, engine in enumerate(ranked_engines):
                 win_rate = f"{(wins[engine]/games[engine]*100):>8.2f}%" if games[engine] > 0 else f"{'-':>9}"
-                print(f"{rank:>4d} {self.engines[engine].name:24.24} {elos[engine]:>5.0f} {games[engine]:>6d} {totals[engine]:>10d} {wins[engine]:>6d} {win_rate}")
+                avg_score = f"{(totals[engine]/games[engine]):>10.2f}" if games[engine] > 0 else f"{'-':>10}"
+                print(f"{rank:>4d} {self.engines[engine].name:24.24} {elos[engine]:>5.0f} {games[engine]:>6d} {totals[engine]:>10d} {avg_score} {wins[engine]:>6d} {win_rate}")
 
         # prepare turn orders for the various games
         args = [] 
