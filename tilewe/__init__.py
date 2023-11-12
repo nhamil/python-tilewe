@@ -511,6 +511,19 @@ class Move:
                "-" + \
                TILE_NAMES[TILES.index(self.contact)] + \
                TILE_NAMES[TILES.index(self.to_square)]
+    
+    def is_equal(self, value: 'Move') -> bool: 
+        return \
+            self.piece == value.piece and \
+            self.rotation == value.rotation and \
+            self.contact == value.contact and \
+            self.to_square == value.to_square 
+
+    def __eq__(self, value: object) -> bool:
+        if type(value) == Move: 
+            return self.is_equal(value) 
+        else: 
+            return False 
 
 class _BoardState: 
 
