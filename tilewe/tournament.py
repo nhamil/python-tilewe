@@ -10,7 +10,7 @@ from tilewe.elo import compute_elo_adjustment_n
 class Tournament: 
     """
     Provides an easy construct for testing large amounts of games
-    for any amount of engines greater than 1. Utilizes multiprocessing to play many
+    for any amount of engines above 0. Utilizes multiprocessing to play many
     games at once. Handles randomizing turn order and reports on 
     win/score results after each game completes. Currently does
     not enforce time controls, but Engines should follow them anyways.
