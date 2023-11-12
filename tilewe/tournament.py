@@ -40,12 +40,14 @@ class Tournament:
         
         if (len(engines) < 1):
             raise Exception("Number of engines must be greater than 0")
+        if move_seconds <= 0:
+            raise Exception("Must allow greater than 0 seconds per move")
         
         self.engines = list(engines)
         self._seconds = move_seconds
         self.move_seconds = self._seconds
 
-    def play(self, n_games: int, n_threads: int=1, move_seconds: int=None, verbose_board: bool=False):
+    def play(self, n_games: int, n_threads: int=1, players_per_game: int=4, move_seconds: int=None, verbose_board: bool=False):
         """
         Used to launch a series of games in an initialized Tournament.
 
@@ -55,11 +57,22 @@ class Tournament:
             The number of games to play
         n_threads : int=1
             The number of simultaneous games to multiprocess
+        players_per_game : int=4
+            The amount of players to have in each game, from 1 to 4
         move_seconds : int=60
             Optional override for the time control for these games
         verbose_board : bool=False
             Whether or not to print the final board state of each match
         """
+
+        if n_games <= 0:
+            raise Exception("Must play at least one game")
+        if n_threads <= 0:
+            raise Exception("Must use at least one thread")
+        if players_per_game <= 0:
+            raise Exception("Must have at least one player per game")
+        if move_seconds <= 0:
+            raise Exception("Must allow greater than 0 seconds per move")
         
         # initialize trackers and game controls
         total_games = 0
@@ -76,7 +89,7 @@ class Tournament:
         for _ in range(n_games): 
             order = list(range(N))
             random.shuffle(order) 
-            args.append(order[:4]) 
+            args.append(order[:players_per_game]) 
 
         # play games with the given level of concurrency
         with multiprocessing.Pool(n_threads, initializer=signal.signal, initargs=(signal.SIGINT, signal.SIG_IGN)) as pool: 
