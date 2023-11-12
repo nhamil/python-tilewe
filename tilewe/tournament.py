@@ -13,6 +13,16 @@ class Tournament:
     games at once. Handles randomizing turn order and reports on 
     win/score results after each game completes. Currently does
     not enforce time controls, but Engines should follow them anyways.
+
+    Example
+    -------
+    >>> tournament = tilewe.engine.Tournament([
+        tilewe.engine.LargestPieceEngine(), 
+        tilewe.engine.MostOpenCornersEngine(), 
+        tilewe.engine.MaximizeMoveDifferenceEngine(), 
+        tilewe.engine.RandomEngine()
+    ], move_seconds=30)
+    >>> tournament.play(1000, n_threads=multiprocessing.cpu_count(), move_seconds=15)
     """
 
     def __init__(self, engines: list[Engine], move_seconds: int=60): 

@@ -6,8 +6,11 @@ import tilewe
 class Engine: 
     """
     Developers should extend this class to build their own engine.
-    Currently requires overriding the `search` function which must
+    Currently requires overriding the `on_search` function which must
     return one legal move within the given time control.
+
+    For extension examples, see the Sample Engines below.
+    For construction examples, see the tilewe.tournament.Tournament class.
     """
     def __init__(self, name: str): 
         self.name = name  
