@@ -12,6 +12,7 @@ class Engine:
     For extension examples, see the Sample Engines below.
     For construction examples, see the tilewe.tournament.Tournament class.
     """
+    
     def __init__(self, name: str): 
         self.name = name  
         self.seconds = 0 
