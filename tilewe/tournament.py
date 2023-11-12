@@ -6,15 +6,14 @@ import signal
 import tilewe 
 from tilewe.engine import Engine
 
-'''
-    Tournament Class
-    Provides an easy construct for testing large amounts of games
-    between 1 to 4 Engines. Utilizes multi-processing to play many
-    games at once. Handles randomizing turn order and reports on 
-    win/score results after each game completes. Currently does
-    not enforce time controls, but Engines should follow them anyways.
-'''
 class Tournament: 
+    '''
+        Provides an easy construct for testing large amounts of games
+        between 1 to 4 Engines. Utilizes multi-processing to play many
+        games at once. Handles randomizing turn order and reports on 
+        win/score results after each game completes. Currently does
+        not enforce time controls, but Engines should follow them anyways.
+    '''
 
     def __init__(self, engines: list[Engine], move_seconds: int=60): 
         self.engines = list(engines)
