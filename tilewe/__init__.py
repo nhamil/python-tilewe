@@ -522,6 +522,14 @@ class Move:
                TILE_NAMES[TILES.index(self.contact)] + \
                TILE_NAMES[TILES.index(self.to_square)]
     
+    def __hash__(self):
+        return self.piece * 2659 + \
+               self.rotation * 5393 + \
+               self.contact[0] * 571 + \
+               self.contact[1] * 683 + \
+               self.to_square[0] * 1607 + \
+               self.to_square[1] * 1741
+    
     def is_equal(self, value: 'Move') -> bool: 
         return \
             self.piece == value.piece and \
