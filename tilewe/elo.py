@@ -83,13 +83,21 @@ def compute_elo_adjustment_n(elos: list[float], scores: list[int], K: int = 32):
     player_count = len(elos)
     mod_K = K / (player_count - 1)
     delta_elos = [ 0 for _ in range(player_count)]
+    winning_score = max(scores)
 
     for player1 in range(player_count):
         for player2 in range(player_count):
             if player1 == player2:
                 continue
 
-            outcome = 0 if scores[player1] < scores[player2] else 1 if scores[player1] > scores[player2] else 0.5
+            # any player can win/draw/lose to any other player by score
+            #outcome = 0 if scores[player1] < scores[player2] else 1 if scores[player1] > scores[player2] else 0.5
+
+            # any losers lose to winners and draw with other losers / any winners win over losers and draw with other winners
+            player1_win = scores[player1] == winning_score
+            player2_win = scores[player2] == winning_score
+            outcome = 0 if player2_win and not player1_win else 1 if player1_win and not player2_win else 0.5
+
             delta_elo = compute_elo_adjustment_2(elos[player1], elos[player2], outcome, mod_K)
             delta_elos[player1] += delta_elo
 
