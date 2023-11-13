@@ -32,7 +32,7 @@ def elo_win_probability(elo1: float, elo2: float, C: int=400):
     # simplified
     return min(max(1.0 / (1.0 + math.pow(10, -(elo1 - elo2) / C)), 0), 1)
 
-def compute_elo_adjustment_2(elo1: float, elo2: float, outcome: float, K: int = 32):
+def compute_elo_adjustment_2(elo1: float, elo2: float, outcome: float, K: float = 32.0):
     """
     Returns the adjustment to the elo of player with elo1 based 
     on the outcome of the match against player with elo2.
@@ -59,7 +59,7 @@ def compute_elo_adjustment_2(elo1: float, elo2: float, outcome: float, K: int = 
     delta_elo = new_elo1 - elo1
     return delta_elo
 
-def compute_elo_adjustment_n(elos: list[float], scores: list[int], K: int = 32):
+def compute_elo_adjustment_n(elos: list[float], scores: list[int], K: float = 32.0):
     """
     Returns the adjustment factor for n players given the set of scores.
     Each player can win, draw, or lose against each other player.

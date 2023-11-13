@@ -191,7 +191,7 @@ class WallCrawlerEngine(Engine):
                 ownership.append(1 if board.color_at(tile) == player else 0)
             return ownership   
 
-        def tile_score_after_move(move: tilewe.Move) -> int: 
+        def tile_score_after_move(move: tilewe.Move) -> float: 
             with MoveExecutor(board, move):
                 owned_tiles = get_owned_tiles_list(board, board.current_player)
                 return -sum(t[0] * t[1] for t in zip(owned_tiles, self.TILE_WEIGHTS))
