@@ -5,7 +5,7 @@ Tilewe (pronounced "tile we") is a multiplayer tile-placing game. Players take t
 * No piece may be directly adjacent to another piece of the same color 
 * Every piece must be placed diagonally from another piece of the same color
 
-The player with the most tiles of their color at the end of the game wins. 
+The player(s) with the most tiles of their color placed on the board at the end of the game win. The end of the game is when no players are able to make another move.
 
 ## Terminology
 
@@ -17,7 +17,7 @@ The board is a 20x20 grid on which tiles can be placed. Coordinates are defined 
 
 ### Piece 
 
-A piece is one of 23 objects made up of tiles that can be placed on the board. Each piece can be rotated and flipped before being placed. The default orientation of piece is shown below: 
+A piece is one of 21 objects made up of tiles that can be placed on the board. Each piece can be rotated and flipped before being placed. The default orientation of piece is shown below: 
 
 ```
 O1   I2   I3   L3    O4    I4   L4    Z4      T4      I5   L5    N5    P5  
@@ -77,11 +77,11 @@ Corners are tiles on the board that diagonally touch a tile owned by a player. O
     a   b   c   d
 ```
 
-The corners d1, b3, b4, and d4 become available to the player who played the piece. 
+The corners d1, a3, b4, and d4 become available to the player who played the piece. 
 
 ### Contact
 
-A contact is a tile within a piece that has corners. When a piece is placed, one of that piece's contacts must be located at an open corner (d1, b3, b4, and d4 in the example) above. Contacts are specified relative to the piece's current rotation. For example, the contact at the bottom of: 
+A contact is a tile within a piece that has corners. When a piece is placed, one of that piece's contacts must be located at an open corner (d1, a3, b4, and d4 in the example above). Contacts are specified relative to the piece's current rotation. For example, the contact at the bottom of: 
 
 ```
 
@@ -90,7 +90,5 @@ A contact is a tile within a piece that has corners. When a piece is placed, one
 ### Move
 
 ## Rules 
-
-
 
 ## Usage
