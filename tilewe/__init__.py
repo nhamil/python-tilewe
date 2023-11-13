@@ -522,6 +522,9 @@ class Move:
                TILE_NAMES[TILES.index(self.contact)] + \
                TILE_NAMES[TILES.index(self.to_square)]
     
+    def __hash__(self):
+        return hash(self.__str__())
+    
     def is_equal(self, value: 'Move') -> bool: 
         return \
             self.piece == value.piece and \
