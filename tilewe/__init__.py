@@ -4,14 +4,16 @@ import numpy as np
 
 print_color = True 
 
+# type wrappers to make use of primitives more clear
 Tile = tuple[int, int] 
 
+# internally int, so copies value not reference 
 Piece = int 
-
 Rotation = int 
-
 Color = int
+_PrpSet = int
 
+# game details related constant declarations
 TILES = [
     A01, B01, C01, D01, E01, F01, G01, H01, I01, J01, K01, L01, M01, N01, O01, P01, Q01, R01, S01, T01, 
     A02, B02, C02, D02, E02, F02, G02, H02, I02, J02, K02, L02, M02, N02, O02, P02, Q02, R02, S02, T02, 
@@ -72,32 +74,49 @@ COLORS = [
     BLUE, YELLOW, RED, GREEN
 ] = [Color(x) for x in range(4)]
 
-NO_COLOR = -1 # type: Color 
+NO_COLOR: Color = -1
 
 COLOR_NAMES = [
     'blue', 'yellow', 'red', 'green'
 ]
 
-# internally int, so copies value not reference 
-_PrpSet = int
-
-PIECE_COUNT = 0
-_PIECES = [] # type: list[_Piece]
-_PIECE_ROTATIONS = [] # type: list[_PieceRotation]
-_PIECE_ROTATION_POINTS = [] # type: list[_PieceRotationPoint]
-_PRP_SET_ALL = 0 # type: _PrpSet
-
 class _Piece: 
+    """
+    Internal/private representation of a game piece
+    including all rotations data.
 
-    def __init__(self, name: str, id: int): 
+    Parameters
+    ----------
+    name : str
+        The name/identifier for the piece
+    id : Piece
+        The id for the piece
+    """
+
+    def __init__(self, name: str, id: Piece): 
         self.name = name 
         self.id = id 
-        self.rotations = [] # type: list[_PieceRotation]
-        self.unique = [] # type: list[bool]
-        self.true_rot = [] # type: list[Rotation]
-        self.true_rot_for = [] # type: list[list[Rotation]]
+        self.rotations: list[_PieceRotation] = []
+        self.unique: list[bool] = []
+        self.true_rot: list[Rotation] = []
+        self.true_rot_for: list[list[Rotation]] = []
 
 class _PieceRotation: 
+    """
+    Internal/private representation of a piece given a choice
+    of rotation.
+
+    Parameters
+    ----------
+    name : str
+        The name/identifier for this piece + rotation
+    pc : _Piece
+        A reference to the underlying internal piece data
+    rot : Rotation
+        Which rotation of the piece this piece-rotation has
+    shape : np.ndarray
+        The 2D matrix depicting the shape of this piece given the rotation
+    """
 
     def __init__(self, name: str, pc: _Piece, rot: Rotation, shape: np.ndarray): 
         self.id = len(_PIECE_ROTATIONS)
@@ -108,9 +127,9 @@ class _PieceRotation:
         self.name = name 
         self.shape = np.array(shape, dtype=np.uint8) 
 
-        self.tiles = [] # type: list[Tile]
-        self.contacts = [] # type: list[Tile]
-        self.prps = {} # type: dict[Tile, _PieceRotationPoint]
+        self.tiles: list[Tile] = []
+        self.contacts: list[Tile] = []
+        self.prps: dict[Tile, _PieceRotationPoint] = {}
         self.n_corners = 0
 
         self.contact_shape = np.zeros_like(shape, dtype=np.uint8)
@@ -140,6 +159,19 @@ class _PieceRotation:
         self.n_corners = len(list(self.prps.values())[0].corners)
 
 class _PieceRotationPoint: 
+    """
+    Internal/private of a piece given a rotation and a contact
+    point on that piece.
+
+    Parameters
+    ----------
+    name : str
+        The name/identifier for this piece + rotation
+    rot : _PieceRotation
+        A reference to the underlying piece + rotation internal data
+    pt : Tile
+        Which contact of the piece is used by this piece-rotation-point
+    """
 
     def __init__(self, name: str, rot: _PieceRotation, pt: Tile): 
         self.id = len(_PIECE_ROTATION_POINTS)
@@ -155,9 +187,9 @@ class _PieceRotationPoint:
 
         dy, dx = pt 
         
-        self.tiles = [] # type: list[Tile]
-        self.adjacent = set() # type: list[Tile]
-        self.corners = set() # type: list[Tile]
+        self.tiles: list[Tile] = []
+        self.adjacent: set[Tile] = set()
+        self.corners: set[Tile] = set()
 
         for y, x in rot.tiles: 
             self.tiles.append((y - dy, x - dx))
@@ -177,7 +209,32 @@ class _PieceRotationPoint:
         self.adjacent = sorted(list(self.adjacent))
         self.corners = sorted(list(self.corners))
 
+# internal global data for all game pieces
+# initialized on library load one time below
+PIECE_COUNT = 0
+_PIECES: list[_Piece] = []
+_PIECE_ROTATIONS: list[_PieceRotation] = []
+_PIECE_ROTATION_POINTS: list[_PieceRotationPoint] = []
+_PRP_SET_ALL: _PrpSet = 0
+
 def _create_piece(name: str, shape: list[list[int]]) -> Piece: 
+    """
+    Adds a piece to the game data, including all rotation and 
+    horizontal flips of that piece.
+
+    Parameters
+    ----------
+    name : str
+        The name/identifier of the piece, used in notation
+    shape : list[list[int]]
+        A two dimensional matrix outlining the shape of the piece
+
+    Returns
+    -------
+    id : Piece
+        The new id assigned to this piece
+    """
+
     global PIECE_COUNT 
     id = PIECE_COUNT 
     PIECE_COUNT += 1 
@@ -185,7 +242,12 @@ def _create_piece(name: str, shape: list[list[int]]) -> Piece:
     _PIECES.append(pc) 
 
     f_names = []
-    def add(suffix: str, arr: np.ndarray): 
+    def add(suffix: str, arr: np.ndarray):
+        """
+        Helper to add a variant of a piece, accounting
+        for uniqueness across rotations and horizontal flips.
+        """
+
         rot = None 
         unique = True 
         cur_rot = len(pc.rotations)
@@ -231,6 +293,7 @@ def _create_piece(name: str, shape: list[list[int]]) -> Piece:
         
     return id 
 
+# setup the 21 piece shapes
 O1 = _create_piece("O1", [
     [1]
 ]) 
@@ -339,24 +402,25 @@ Z5 = _create_piece("Z5", [
     [0, 1, 1]
 ])
 
-_PRP_WITH_REL_COORD = defaultdict(_PrpSet) # type: dict[Tile, _PrpSet]
+# compute relative coordinates for the pieces
+_PRP_WITH_REL_COORD: dict[Tile, _PrpSet] = defaultdict(_PrpSet)
 for _pt in _PIECE_ROTATION_POINTS: 
     for _tile in _pt.tiles: 
         _PRP_WITH_REL_COORD[_tile] |= _pt.as_set
 
-_PRP_WITH_ADJ_REL_COORD = defaultdict(_PrpSet) # type: dict[Tile, _PrpSet]
+_PRP_WITH_ADJ_REL_COORD: dict[Tile, _PrpSet] = defaultdict(_PrpSet)
 for _pt in _PIECE_ROTATION_POINTS: 
     for _tile in _pt.adjacent: 
         _PRP_WITH_ADJ_REL_COORD[_tile] |= _pt.as_set
 
-_PRP_REL_COORDS = set() # type: list[Tile]
+_PRP_REL_COORDS: set[Tile] = set()
 for _pt in _PRP_WITH_REL_COORD:
     _PRP_REL_COORDS.add(_pt)
 for _pt in _PRP_WITH_ADJ_REL_COORD:
     _PRP_REL_COORDS.add(_pt)
 _PRP_REL_COORDS = list(_PRP_REL_COORDS)
 
-_PRP_WITH_PC_ID = defaultdict(_PrpSet) # type: dict[int, _PrpSet]
+_PRP_WITH_PC_ID: dict[int, _PrpSet] = defaultdict(_PrpSet)
 for _pt in _PIECE_ROTATION_POINTS: 
     _PRP_WITH_PC_ID[_pt.piece_id] |= _pt.as_set
 
@@ -367,7 +431,38 @@ def out_of_bounds(tile: Tile) -> bool:
         return True 
     return False
 
+# helpers for retrieving information about game pieces
+def n_piece_contacts(piece: Piece) -> int: 
+    return len(_PIECES[piece].rotations[0].contacts)
+
+def n_piece_tiles(piece: Piece) -> int: 
+    return len(_PIECES[piece].rotations[0].tiles)
+
+def n_piece_corners(piece: Piece) -> int: 
+    return _PIECES[piece].rotations[0].n_corners
+
+def piece_tiles(piece: Piece, rotation: Rotation, contact: Tile=None) -> list[Tile]: 
+    if contact is None: 
+        return list(_PIECES[piece].rotations[rotation].tiles)
+    else: 
+        return list(_PIECES[piece].rotations[rotation].prps[contact].tiles)
+
 class _PlayerState: 
+    """
+    Internal/private minimal representation of a player's state data
+    that will be pushed on a stack as the player takes game actions.
+
+    Parameters
+    ----------
+    prps : _PrpSet
+        The player's current set of piece-rotation-points
+    corners: dict[Tile, _PrpSet]
+        The player's current set of piece-rotation-points for each open corner tile
+    has_player : bool
+        Whether or not the player has made a move yet
+    score : int
+        The player's current score in the active game
+    """
 
     def __init__(self, prps: _PrpSet, corners: dict[Tile, _PrpSet], has_played: bool, score: int): 
         self.prps = prps 
@@ -385,17 +480,32 @@ class _PlayerState:
         return out 
 
 class _Player: 
+    """
+    Internal/private representation of a player used
+    by a game Board instance.
+
+    Parameters
+    ----------
+    name : str
+        A name to identify the player by
+    id : Color
+        Which color the player is playing as, i.e. their turn order
+    borad : Board
+        A reference to the board the player is playing on
+    """
 
     def __init__(self, name: str, id: Color, board: 'Board'): 
         self.name = name 
         self.id = id
         self._prps = _PRP_SET_ALL
         self.board = board 
-        self.corners = {} # type: dict[Tile, _PrpSet]
+        self.corners: dict[Tile, _PrpSet] = {}
         self.has_played = False 
         self.score = 0
-        self._state = [] # type: list[_PlayerState]
+        self._state: list[_PlayerState] = []
 
+        # add the 4 initial corners of the board at game start
+        # since each player's first move has this rule exception
         self.add_corner(A01) 
         self.add_corner(A20) 
         self.add_corner(T01) 
@@ -462,7 +572,7 @@ class _Player:
         #     find all piece permutations that need one of the filled tiles
         #     and remove them from possible moves 
         for corner, prps in self.corners.items(): 
-            invalid = 0 # type: _PrpSet
+            invalid: _PrpSet = 0
             for tile in tiles: 
                 rel = (tile[0] - corner[0], tile[1] - corner[1]) 
                 invalid |= _PRP_WITH_REL_COORD[rel]
@@ -479,7 +589,7 @@ class _Player:
         if tile in self.corners or out_of_bounds(tile):
             return
 
-        bad = 0 # type: _PrpSet
+        bad: _PrpSet = 0
 
         for rel in _PRP_REL_COORDS: 
             pt = (rel[0] + tile[0], rel[1] + tile[1])
@@ -492,22 +602,21 @@ class _Player:
         if prps > 0:
             self.corners[tile] = prps
 
-def n_piece_contacts(piece: Piece) -> int: 
-    return len(_PIECES[piece].rotations[0].contacts)
-
-def n_piece_tiles(piece: Piece) -> int: 
-    return len(_PIECES[piece].rotations[0].tiles)
-
-def n_piece_corners(piece: Piece) -> int: 
-    return _PIECES[piece].rotations[0].n_corners
-
-def piece_tiles(piece: Piece, rotation: Rotation, contact: Tile=None) -> list[Tile]: 
-    if contact is None: 
-        return list(_PIECES[piece].rotations[rotation].tiles)
-    else: 
-        return list(_PIECES[piece].rotations[rotation].prps[contact].tiles)
-
-class Move: 
+class Move:
+    """
+    Public representation of a Move to be played on a game board.
+    
+    Parameters
+    ----------
+    piece : Piece
+        Which of the 21 basic piece shapes is used in this Move
+    rotation : Rotation
+        Which of the 8 rotations (4 normal, 4 flipped) is used in this Move
+    contact : Tile
+        Which square on the piece is being placed at an open corner in this Move
+    to_square : Tile
+        Which square on the board the contact is being placed at by this Move
+    """
 
     def __init__(self, piece: Piece, rotation: Rotation, contact: Tile, to_square: Tile): 
         self.piece = piece 
@@ -522,6 +631,15 @@ class Move:
                TILE_NAMES[TILES.index(self.contact)] + \
                TILE_NAMES[TILES.index(self.to_square)]
     
+    def __hash__(self):
+        # adds support for using Move objects in sets
+        return self.piece * 2659 + \
+               self.rotation * 5393 + \
+               self.contact[0] * 571 + \
+               self.contact[1] * 683 + \
+               self.to_square[0] * 1607 + \
+               self.to_square[1] * 1741
+    
     def is_equal(self, value: 'Move') -> bool: 
         return \
             self.piece == value.piece and \
@@ -535,7 +653,12 @@ class Move:
         else: 
             return False 
         
-    def to_unique(self) -> 'Move': 
+    def to_unique(self) -> 'Move':
+        """
+        If a Move has several rotations/flips that result in the same move
+        this function helps simplify them to one version.
+        """
+
         return Move(
             self.piece, 
             _PIECES[self.piece].true_rot[self.rotation], 
@@ -544,21 +667,41 @@ class Move:
         )
 
 class _BoardState: 
+    """
+    Internal/private minimal representation of a board's state data
+    that will be pushed on a stack as actions are taken in the game.
+
+    Parameters
+    ----------
+    cur_player : int
+        Which player's turn it is in the game
+    tiles : list[Tile]
+        The list of all Tile objects on the board
+    """
 
     def __init__(self, cur_player: int, tiles: list[Tile]): 
         self.cur_player = cur_player
         self.tiles = tiles 
 
 class Board: 
+    """
+    Public representation of a game Board which is how
+    players or bots interface with the game.
+
+    Parameters
+    ----------
+    n_players : int
+        The number of players participating in the game on this board
+    """
 
     def __init__(self, n_players: int): 
         if n_players < 1 or n_players > 4: 
             raise Exception("Number of players must be between 1 and 4") 
 
-        self._state = [] # type: list[_BoardState]
+        self._state: list[_BoardState] = [] 
         self._tiles = np.zeros((20, 20), dtype=np.uint8) 
         self._n_players = n_players 
-        self._players = [] # type: list[_Player]
+        self._players: list[_Player] = []
 
         chars = [
             'B', 
@@ -569,10 +712,10 @@ class Board:
         for i in range(n_players): 
             self._players.append(_Player(chars[i], i, self))
 
-        self.current_player = BLUE # type: Color 
+        self.current_player: Color = BLUE
         self.finished = False 
         self.ply = 0 
-        self.moves = [] # type: list[Move]
+        self.moves: list[Move] = []
 
     def copy_current_state(self) -> 'Board': 
         out = Board.__new__(Board) 
@@ -647,9 +790,9 @@ class Board:
         if player is None: 
             player = self.current_player 
 
-        player = self._players[player] # type: _Player
+        player = self._players[player]
+        prps = player.corners.get(tile, 0)
 
-        prps = player.corners.get(tile, 0) # type: _PrpSet
         return (prps & (1 << prp_id)) != 0
 
     def is_legal(self, move: Move, for_player: Color=None) -> bool: 
@@ -705,8 +848,7 @@ class Board:
         return total 
 
     def generate_legal_moves(self, unique: bool=True, for_player: Color=None): 
-        moves = [] # type: list[Move] 
-
+        moves: list[Move] = [] 
         player = self._players[self.current_player if for_player is None else for_player]
 
         # duplicate for loop so that we don't check the if statement for every permutation
