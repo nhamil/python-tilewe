@@ -442,10 +442,14 @@ def n_piece_corners(piece: Piece) -> int:
     return _PIECES[piece].rotations[0].n_corners
 
 def piece_tiles(piece: Piece, rotation: Rotation, contact: Tile=None) -> list[Tile]: 
+    """WARNING: The output of this function may change in the future"""
     if contact is None: 
         return list(_PIECES[piece].rotations[rotation].tiles)
     else: 
         return list(_PIECES[piece].rotations[rotation].prps[contact].tiles)
+
+def piece_tile_coords(piece: Piece, rotation: Rotation, contact: Tile=None) -> list[tuple[int, int]]: 
+    return piece_tiles(piece, rotation, contact)
 
 class _PlayerState: 
     """
@@ -614,22 +618,22 @@ class Move:
         Which of the 8 rotations (4 normal, 4 flipped) is used in this Move
     contact : Tile
         Which square on the piece is being placed at an open corner in this Move
-    to_square : Tile
+    to_tile : Tile
         Which square on the board the contact is being placed at by this Move
     """
 
-    def __init__(self, piece: Piece, rotation: Rotation, contact: Tile, to_square: Tile): 
+    def __init__(self, piece: Piece, rotation: Rotation, contact: Tile, to_tile: Tile): 
         self.piece = piece 
         self.rotation = rotation 
         self.contact = contact 
-        self.to_square = to_square 
+        self.to_tile = to_tile 
 
     def __str__(self): 
         return _PIECES[self.piece].name + \
                ROTATION_NAMES[self.rotation] + \
                "-" + \
                TILE_NAMES[TILES.index(self.contact)] + \
-               TILE_NAMES[TILES.index(self.to_square)]
+               TILE_NAMES[TILES.index(self.to_tile)]
     
     def __hash__(self):
         # adds support for using Move objects in sets
@@ -637,15 +641,15 @@ class Move:
                self.rotation * 5393 + \
                self.contact[0] * 571 + \
                self.contact[1] * 683 + \
-               self.to_square[0] * 1607 + \
-               self.to_square[1] * 1741
+               self.to_tile[0] * 1607 + \
+               self.to_tile[1] * 1741
     
     def is_equal(self, value: 'Move') -> bool: 
         return \
             self.piece == value.piece and \
             self.rotation == value.rotation and \
             self.contact == value.contact and \
-            self.to_square == value.to_square 
+            self.to_tile == value.to_tile 
 
     def __eq__(self, value: object) -> bool:
         if type(value) == Move: 
@@ -663,7 +667,7 @@ class Move:
             self.piece, 
             _PIECES[self.piece].true_rot[self.rotation], 
             self.contact, 
-            self.to_square     
+            self.to_tile     
         )
 
 class _BoardState: 
@@ -799,7 +803,7 @@ class Board:
         player = self._players[self.current_player if for_player is None else for_player]
 
         # target tile must be empty 
-        if move.to_square is None or self.color_at(move.to_square) != NO_COLOR: 
+        if move.to_tile is None or self.color_at(move.to_tile) != NO_COLOR: 
             return False 
         
         # piece must be real
@@ -818,7 +822,7 @@ class Board:
             return False 
 
         # available permutations at the requested tile
-        prps = player.corners.get(move.to_square, None)
+        prps = player.corners.get(move.to_tile, None)
         if prps is None: 
             return False 
 
@@ -903,7 +907,7 @@ class Board:
         Legality is assumed to be true. 
         """
         prp = _PIECES[move.piece].rotations[move.rotation].prps[move.contact]
-        self._push_prp(move, prp, move.to_square) 
+        self._push_prp(move, prp, move.to_tile) 
 
     def pop(self) -> None: 
         state = self._state.pop() 
