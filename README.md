@@ -38,7 +38,7 @@ X X .   X X   . X .   X X X   . . X   . X X   X X X   . X .
 
 You can get the number of tiles in a piece with: 
 
-```
+```py
 >>> tilewe.n_piece_tiles(tilewe.O1)
 1
 >>> tilewe.n_piece_tiles(tilewe.X5)
@@ -75,7 +75,7 @@ X X .   . X X   X X .
 
 You can get the coordinates for the tiles in a piece rotation with: 
 
-```
+```py
 >>> tilewe.piece_tile_coords(tilewe.O1, tilewe.NORTH)
 [(0, 0)]
 >>> tilewe.piece_tile_coords(tilewe.X5, tilewe.WEST_F)
@@ -107,7 +107,7 @@ The corners d1, a3, b4, and d4 become available to the player who played the pie
 
 You can get the number of corners for a piece with: 
 
-```
+```py
 >>> tilewe.n_piece_corners(tilewe.O1)
 4
 >>> tilewe.n_piece_corners(tilewe.X5)
@@ -157,7 +157,7 @@ Regardless of where the V5 piece is placed on the board, its contact tiles for e
 
 You can get the number of contact tiles for a piece with: 
 
-```
+```py
 >>> tilewe.n_piece_contacts(tilewe.O1)
 1
 >>> tilewe.n_piece_contacts(tilewe.X5)
@@ -209,7 +209,7 @@ Where:
 
 You can get moves from a board: 
 
-```
+```py
 >>> import random
 >>> board = tilewe.Board(n_players=4) 
 >>> moves = board.generate_legal_moves()
@@ -232,7 +232,7 @@ You can get moves from a board:
 
 You can also construct your own moves: 
 
-```
+```py
 >>> board = tilewe.Board(n_players=4)
 >>> move = tilewe.Move(
 ...     piece=tilewe.W5, 
