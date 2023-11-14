@@ -287,7 +287,7 @@ Make sure `pip` is up to date and install both dev dependencies and project depe
 ```bash
 $ python3.10 -m pip install --upgrade pip
 $ python3.10 -m pip install flake8 pytest
-$ python3.10 -m pip install -e ./tilewe
+$ python3.10 -m pip install -r requirements.txt
 ```
 
 To locally install `tilewe` as a package so you can `import tilewe` anywhere (such as the `/tests` directory...) do:
