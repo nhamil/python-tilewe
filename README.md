@@ -284,3 +284,5 @@ To locally install `tilewe` as a package so you can `import tilewe` anywhere (su
 $ cd tilewe
 $ python3.10 -m pip install -e .
 ```
+
+To enable pre-commit hooks to catch issues locally instead of on Github workflows, copy the `.github/pre-commit.sample` script to `.git/hooks/pre-commit`.
