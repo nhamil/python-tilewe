@@ -94,6 +94,7 @@ class TournamentResults:
         self.match_data = match_data
         self.total_games = len(self.match_data)
         self.engine_names = engine_names
+        self.total_engines = len(self.engine_names)
         self.game_counts = game_counts
         self.win_counts = win_counts
         self.total_scores = total_scores
@@ -102,6 +103,14 @@ class TournamentResults:
         self.real_time = real_time
         self.total_time = total_time
     
+    @property
+    def win_rates(self) -> list[float]: 
+        return [self.win_counts[i] / max(1, self.game_counts[i]) for i in range(self.total_engines)]
+    
+    @property
+    def avg_scores(self) -> list[float]: 
+        return [self.total_scores[i] / max(1, self.game_counts[i]) for i in range(self.total_engines)]
+
     def get_matches_by_engine(self, engine: int) -> list[MatchData]:
         filtered_matches = [x for x in self.match_data if engine in x.engines]
         return filtered_matches
@@ -144,8 +153,8 @@ class TournamentResults:
         if sort_dir != 'asc' and sort_dir != 'desc':
             return f"Invalid sort direction '{sort_dir}', try 'asc' or 'desc'"
 
-        out = ""
-        out += f"\n{'Rank':4} {'Name':24} {'Elo':>5} {'Games':>6} {'Score':>10} {'Avg Score':>10} {'Wins':>6} {'Win Rate':>9}\n"
+        out = f"Ranking by {sort_by} {sort_dir}:\n"
+        out += f"{'Rank':4} {'Name':24} {'Elo':>5} {'Games':>6} {'Score':>10} {'Avg Score':>10} {'Wins':>6} {'Win Rate':>9}\n"
         dir = -1 if sort_dir == 'desc' else 1
         ranked_engines = sorted(range(len(self.engine_names)), key=lambda x: dir * sort_attr[x])
         for rank, engine in enumerate(ranked_engines):
