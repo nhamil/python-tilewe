@@ -31,15 +31,16 @@ class Engine:
         raise NotImplementedError() 
 
 """
-    Sample Engines
-    The following engines implement fairly simple strategies and can
-    be used for testing your Engine against in tournaments.
-    Approximate strength ordering:
-        WallCrawlerEngine, very weak
-        RandomEngine, very weak
-        MostOpenCornersEngine, weak
-        LargestPieceEngine, moderate
-        MaximizeMoveDifferenceEngine, surprisingly strong
+Sample Engines
+
+The following engines implement fairly simple strategies and can
+be used for testing your Engine against in tournaments.
+Approximate strength ordering:
+    WallCrawlerEngine, very weak
+    RandomEngine, very weak
+    MostOpenCornersEngine, weak
+    LargestPieceEngine, moderate
+    MaximizeMoveDifferenceEngine, surprisingly strong
 """
 
 class MoveExecutor(object):
