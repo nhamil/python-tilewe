@@ -20,6 +20,12 @@ class TestTilewe(unittest.TestCase):
 
         #  5.32% win rate against 500 stronger enemy
         self.assertAlmostEqual(tilewe.elo.elo_win_probability(1500, 2000), 0.0532, 4)
+        
+        # 99.01% win rate against 800 weaker enemy
+        self.assertAlmostEqual(tilewe.elo.elo_win_probability(2300, 1500), 0.9901, 4)
+
+        #  0.99% win rate against 800 stronger enemy
+        self.assertAlmostEqual(tilewe.elo.elo_win_probability(1500, 2300), 0.0099, 4)
 
     def test_elo_rank_change(self):
         K = 32
@@ -41,3 +47,12 @@ class TestTilewe(unittest.TestCase):
 
         # draw against 100 stronger opponent gives +4.4821 Elo with K = 32
         self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 1600, 0.5, 32), 4.4821, 4)
+        
+        # loss against 1000 stronger opponent gives close to -0 Elo
+        self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 2500, 0, 32), -0.1009, 4)
+        
+        # win against 1000 stronger opponent gives nearly +K Elo
+        self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 2500, 1, 32), 31.8991, 4)
+
+        # draw against 1000 stronger opponent gives roughly +K/2 Elo
+        self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 2500, 0.5, 32), 15.8991, 4)
