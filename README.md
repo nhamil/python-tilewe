@@ -118,7 +118,7 @@ You can get the number of corners for a piece with:
 (varies)
 ```
 
-### Contact Tiles
+### Contact Tile
 
 Contact tiles are a subset of tiles within a piece. A contact tile is a tile that either has less than 2 neighbors, or 2 neighbors that connect at a right angle (contact tiles are denoted as `C` and non-contact tiles as `X`): 
 
