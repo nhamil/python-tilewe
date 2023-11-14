@@ -22,9 +22,14 @@ jobs:
         python-version: "3.10"
     - name: Install dependencies
       run: |
+        # install python, the linter, the tester and the dependencies
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+        # install the tilewe package locally
+        cd tilewe
+        python -m pip install -e .
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names

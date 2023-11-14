@@ -276,3 +276,11 @@ Get a list of open corners a player has: `board.player_corners(player)`
 Whether or not a player can still play: `board.can_play(player)`
 
 Get the color of a tile: `board.color_at(tile)`
+
+## Developers
+
+To locally install `tilewe` as a package so you can `import tilewe` anywhere (such as the `/tests` directory...) do:
+```bash
+$ cd tilewe
+$ python3.10 -m pip install -e .
+```

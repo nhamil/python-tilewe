@@ -1,9 +1,6 @@
-import sys
-sys.path.append('..')
-
 import unittest 
 
-import tilewe 
+import tilewe
 
 class TestTilewe(unittest.TestCase): 
     

@@ -1,0 +1,18 @@
+[project]
+name = "tilewe"
+version = "0.0.1"
+authors = [
+  { name="Nicholas Hamilton", email="nh.contact.1@gmail.com" },
+  { name="Michael Conard", email="michaelaconard314@gmail.com" },
+]
+description = "A tile placing game for AI development fun"
+readme = "README.md"
+requires-python = "==3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Github" = "https://github.com/nhamil/python-tilewe"
