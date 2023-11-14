@@ -31,10 +31,10 @@ class TestTilewe(unittest.TestCase):
         K = 32
 
         # loss against equally matched opponent gives -K/2 Elo
-        self.assertEqual(tilewe.elo.compute_elo_adjustment_2(1500, 1500, 0, K), -16.0)
+        self.assertEqual(tilewe.elo.compute_elo_adjustment_2(1500, 1500, 0, K), -K / 2)
         
         # win against equally matched opponent gives +K/2 Elo
-        self.assertEqual(tilewe.elo.compute_elo_adjustment_2(1500, 1500, 1, K), 16.0)
+        self.assertEqual(tilewe.elo.compute_elo_adjustment_2(1500, 1500, 1, K), K / 2)
 
         # draw against equally matched opponent gives +/-0 Elo
         self.assertEqual(tilewe.elo.compute_elo_adjustment_2(1500, 1500, 0.5, K), 0.0)
