@@ -30,6 +30,8 @@ class MatchData:
         Change in player Elos as a result of this match
     elo_end : list[float]
         Player Elos after this match
+    run_time : float
+        The duration of this match in seconds
     """
 
     def __init__(
@@ -65,8 +67,6 @@ class TournamentResults:
         List of game count played by each engine
     win_counts : list[int]
         List of win count by each engine
-    game_counts : list[int]
-        List of game count played by each engine
     total_scores : list[int]
         List of total scores earned by each engine
     elo_start : list[float]
