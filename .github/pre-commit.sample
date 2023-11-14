@@ -10,6 +10,12 @@ flake2=$(flake8 . --count --exit-zero --max-complexity=20 --max-line-length=127 
 if [ "$flake1" = "0" ] && [ "$flake2" = "0" ]; then
     echo "passed all flake tests"
 else
+    if [ "$flake1" != "0" ]; then
+        echo "$flake1"
+    fi
+    if [ "$flake2" != "0" ]; then
+        echo "$flake2"
+    fi
     echo "failed some flake tests"
     exit 1
 fi
