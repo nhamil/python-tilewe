@@ -111,6 +111,10 @@ class TournamentResults:
     def avg_scores(self) -> list[float]: 
         return [self.total_scores[i] / max(1, self.game_counts[i]) for i in range(self.total_engines)]
 
+    @property
+    def average_match_duration(self) -> float:
+        return self.total_time / max(1, self.total_games)
+    
     def get_matches_by_engine(self, engine: int) -> list[MatchData]:
         filtered_matches = [x for x in self.match_data if engine in x.engines]
         return filtered_matches
@@ -138,9 +142,6 @@ class TournamentResults:
     
     def get_delta_elo_by_engine(self, engine: int) -> int:
         return self.elo_end[engine] - self.elo_start[engine]
-    
-    def get_average_match_duration(self) -> float:
-        return self.total_time / max(1, self.total_games)
     
     def get_engine_rankings_display(self, sort_by: str = 'elo_end', sort_dir: str = 'desc') -> str:
         if not hasattr(self, sort_by):
