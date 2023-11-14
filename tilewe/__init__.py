@@ -1,6 +1,10 @@
 from collections import defaultdict
+import sys
 
 import numpy as np 
+
+if sys.version_info[0] != 3 or sys.version_info[1] < 10:
+    raise Exception("Requires Python 3.10")
 
 print_color = True 
 
