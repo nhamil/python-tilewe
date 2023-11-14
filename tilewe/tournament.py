@@ -133,10 +133,21 @@ class TournamentResults:
     def get_average_match_duration(self) -> float:
         return self.total_time / max(1, self.total_games)
     
-    def get_engine_rankings_display(self) -> str:
+    def get_engine_rankings_display(self, sort_by: str = 'elo_end', sort_dir: str = 'desc') -> str:
+        if not hasattr(self, sort_by):
+            return f"Invalid sort field '{sort_by}', must specify a valid TournamentResults property"
+        sort_attr: list = getattr(self, sort_by)
+        if not isinstance(sort_attr, list) or len(sort_attr) <= 0:
+            return f"Invalid sort field '{sort_by}', must specify a list of length >0"
+        if not isinstance(sort_attr[0], int) and not isinstance(sort_attr[0], float):
+            return f"Invalid sort field '{sort_by}', must specify a numeric list"
+        if sort_dir != 'asc' and sort_dir != 'desc':
+            return f"Invalid sort direction '{sort_dir}', try 'asc' or 'desc'"
+
         out = ""
         out += f"\n{'Rank':4} {'Name':24} {'Elo':>5} {'Games':>6} {'Score':>10} {'Avg Score':>10} {'Wins':>6} {'Win Rate':>9}\n"
-        ranked_engines = sorted(range(len(self.engine_names)), key=lambda x: -self.elo_end[x])
+        dir = -1 if sort_dir == 'desc' else 1
+        ranked_engines = sorted(range(len(self.engine_names)), key=lambda x: dir * sort_attr[x])
         for rank, engine in enumerate(ranked_engines):
             name = self.engine_names[engine]
             wins, games = self.win_counts[engine], self.game_counts[engine]
