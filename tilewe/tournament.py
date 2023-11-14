@@ -209,7 +209,15 @@ class Tournament:
         self._seconds = move_seconds
         self.move_seconds = self._seconds
 
-    def play(self, n_games: int, n_threads: int=1, players_per_game: int=4, move_seconds: int=None, verbose_board: bool=False):
+    def play(
+        self,
+        n_games: int,
+        n_threads: int=1,
+        players_per_game: int=4,
+        move_seconds: int=None,
+        verbose_board: bool=False,
+        verbose_rankings: bool=True
+    ):
         """
         Used to launch a series of games in an initialized Tournament.
 
@@ -225,6 +233,8 @@ class Tournament:
             Optional override for the time control for these games
         verbose_board : bool=False
             Whether or not to print the final board state of each match
+        verbose_rankings : bool=True
+            Whether or not to print periodic ranking updates and the final rankings at the end
         """
 
         if n_games <= 0:
@@ -321,11 +331,10 @@ class Tournament:
                             print("")
 
                         # output rankings summary every match chunk (or minimum 10 matches)
-                        if total_games % max(10, n_threads) == 0 and total_games != n_games:
+                        if verbose_rankings and total_games % max(10, n_threads) == 0 and total_games != n_games:
                             print(get_engine_rankings())
                     else: 
                         print("Game failed to terminate")
-                print(get_engine_rankings())
 
             except KeyboardInterrupt:
                 print("Caught KeyboardInterrupt, terminating workers")
@@ -343,6 +352,10 @@ class Tournament:
             end_time - start_time,
             total_time
         )
+
+        if verbose_rankings:
+            print("")
+            print(results.get_engine_rankings_display())
 
         return results
 
