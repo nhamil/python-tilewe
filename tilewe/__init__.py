@@ -40,26 +40,26 @@ TILES = [
 ]
 
 TILE_NAMES = [
-    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", "i1", "j1", "k1", "l1", "m1", "n1", "o1", "p1", "q1", "r1", "s1", "t1", 
-    "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2", "i2", "j2", "k2", "l2", "m2", "n2", "o2", "p2", "q2", "r2", "s2", "t2", 
-    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3", "i3", "j3", "k3", "l3", "m3", "n3", "o3", "p3", "q3", "r3", "s3", "t3", 
-    "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4", "i4", "j4", "k4", "l4", "m4", "n4", "o4", "p4", "q4", "r4", "s4", "t4", 
-    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5", "i5", "j5", "k5", "l5", "m5", "n5", "o5", "p5", "q5", "r5", "s5", "t5", 
-    "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6", "i6", "j6", "k6", "l6", "m6", "n6", "o6", "p6", "q6", "r6", "s6", "t6", 
-    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7", "i7", "j7", "k7", "l7", "m7", "n7", "o7", "p7", "q7", "r7", "s7", "t7", 
-    "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8", "i8", "j8", "k8", "l8", "m8", "n8", "o8", "p8", "q8", "r8", "s8", "t8", 
-    "a9", "b9", "c9", "d9", "e9", "f9", "g9", "h9", "i9", "j9", "k9", "l9", "m9", "n9", "o9", "p9", "q9", "r9", "s9", "t9", 
-    "a10", "b10", "c10", "d10", "e10", "f10", "g10", "h10", "i10", "j10", "k10", "l10", "m10", "n10", "o10", "p10", "q10", "r10", "s10", "t10", 
-    "a11", "b11", "c11", "d11", "e11", "f11", "g11", "h11", "i11", "j11", "k11", "l11", "m11", "n11", "o11", "p11", "q11", "r11", "s11", "t11", 
-    "a12", "b12", "c12", "d12", "e12", "f12", "g12", "h12", "i12", "j12", "k12", "l12", "m12", "n12", "o12", "p12", "q12", "r12", "s12", "t12", 
-    "a13", "b13", "c13", "d13", "e13", "f13", "g13", "h13", "i13", "j13", "k13", "l13", "m13", "n13", "o13", "p13", "q13", "r13", "s13", "t13", 
-    "a14", "b14", "c14", "d14", "e14", "f14", "g14", "h14", "i14", "j14", "k14", "l14", "m14", "n14", "o14", "p14", "q14", "r14", "s14", "t14", 
-    "a15", "b15", "c15", "d15", "e15", "f15", "g15", "h15", "i15", "j15", "k15", "l15", "m15", "n15", "o15", "p15", "q15", "r15", "s15", "t15", 
-    "a16", "b16", "c16", "d16", "e16", "f16", "g16", "h16", "i16", "j16", "k16", "l16", "m16", "n16", "o16", "p16", "q16", "r16", "s16", "t16", 
-    "a17", "b17", "c17", "d17", "e17", "f17", "g17", "h17", "i17", "j17", "k17", "l17", "m17", "n17", "o17", "p17", "q17", "r17", "s17", "t17", 
-    "a18", "b18", "c18", "d18", "e18", "f18", "g18", "h18", "i18", "j18", "k18", "l18", "m18", "n18", "o18", "p18", "q18", "r18", "s18", "t18", 
-    "a19", "b19", "c19", "d19", "e19", "f19", "g19", "h19", "i19", "j19", "k19", "l19", "m19", "n19", "o19", "p19", "q19", "r19", "s19", "t19", 
-    "a20", "b20", "c20", "d20", "e20", "f20", "g20", "h20", "i20", "j20", "k20", "l20", "m20", "n20", "o20", "p20", "q20", "r20", "s20", "t20"
+    "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1", "i1", "j1", "k1", "l1", "m1", "n1", "o1", "p1", "q1", "r1", "s1", "t1",                      # noqa: 501
+    "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2", "i2", "j2", "k2", "l2", "m2", "n2", "o2", "p2", "q2", "r2", "s2", "t2",                      # noqa: 501
+    "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3", "i3", "j3", "k3", "l3", "m3", "n3", "o3", "p3", "q3", "r3", "s3", "t3",                      # noqa: 501
+    "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4", "i4", "j4", "k4", "l4", "m4", "n4", "o4", "p4", "q4", "r4", "s4", "t4",                      # noqa: 501
+    "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5", "i5", "j5", "k5", "l5", "m5", "n5", "o5", "p5", "q5", "r5", "s5", "t5",                      # noqa: 501
+    "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6", "i6", "j6", "k6", "l6", "m6", "n6", "o6", "p6", "q6", "r6", "s6", "t6",                      # noqa: 501
+    "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7", "i7", "j7", "k7", "l7", "m7", "n7", "o7", "p7", "q7", "r7", "s7", "t7",                      # noqa: 501
+    "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8", "i8", "j8", "k8", "l8", "m8", "n8", "o8", "p8", "q8", "r8", "s8", "t8",                      # noqa: 501
+    "a9", "b9", "c9", "d9", "e9", "f9", "g9", "h9", "i9", "j9", "k9", "l9", "m9", "n9", "o9", "p9", "q9", "r9", "s9", "t9",                      # noqa: 501
+    "a10", "b10", "c10", "d10", "e10", "f10", "g10", "h10", "i10", "j10", "k10", "l10", "m10", "n10", "o10", "p10", "q10", "r10", "s10", "t10",  # noqa: 501
+    "a11", "b11", "c11", "d11", "e11", "f11", "g11", "h11", "i11", "j11", "k11", "l11", "m11", "n11", "o11", "p11", "q11", "r11", "s11", "t11",  # noqa: 501
+    "a12", "b12", "c12", "d12", "e12", "f12", "g12", "h12", "i12", "j12", "k12", "l12", "m12", "n12", "o12", "p12", "q12", "r12", "s12", "t12",  # noqa: 501
+    "a13", "b13", "c13", "d13", "e13", "f13", "g13", "h13", "i13", "j13", "k13", "l13", "m13", "n13", "o13", "p13", "q13", "r13", "s13", "t13",  # noqa: 501
+    "a14", "b14", "c14", "d14", "e14", "f14", "g14", "h14", "i14", "j14", "k14", "l14", "m14", "n14", "o14", "p14", "q14", "r14", "s14", "t14",  # noqa: 501
+    "a15", "b15", "c15", "d15", "e15", "f15", "g15", "h15", "i15", "j15", "k15", "l15", "m15", "n15", "o15", "p15", "q15", "r15", "s15", "t15",  # noqa: 501
+    "a16", "b16", "c16", "d16", "e16", "f16", "g16", "h16", "i16", "j16", "k16", "l16", "m16", "n16", "o16", "p16", "q16", "r16", "s16", "t16",  # noqa: 501
+    "a17", "b17", "c17", "d17", "e17", "f17", "g17", "h17", "i17", "j17", "k17", "l17", "m17", "n17", "o17", "p17", "q17", "r17", "s17", "t17",  # noqa: 501
+    "a18", "b18", "c18", "d18", "e18", "f18", "g18", "h18", "i18", "j18", "k18", "l18", "m18", "n18", "o18", "p18", "q18", "r18", "s18", "t18",  # noqa: 501
+    "a19", "b19", "c19", "d19", "e19", "f19", "g19", "h19", "i19", "j19", "k19", "l19", "m19", "n19", "o19", "p19", "q19", "r19", "s19", "t19",  # noqa: 501
+    "a20", "b20", "c20", "d20", "e20", "f20", "g20", "h20", "i20", "j20", "k20", "l20", "m20", "n20", "o20", "p20", "q20", "r20", "s20", "t20"   # noqa: 501
 ]
 
 ROTATIONS = [
@@ -133,19 +133,19 @@ class _PieceRotation:
         self.n_corners = 0
 
         self.contact_shape = np.zeros_like(shape, dtype=np.uint8)
-        H,W = shape.shape
+        H, W = shape.shape
         for y in range(H): 
             for x in range(W): 
                 # check each tile in piece 
-                if shape[y,x] != 0: 
+                if shape[y, x] != 0: 
                     self.tiles.append((y, x))
                     v_neighbors = 0
                     h_neighbors = 0
 
-                    if y > 0   and shape[y-1,x] != 0: v_neighbors += 1
-                    if y < H-1 and shape[y+1,x] != 0: v_neighbors += 1
-                    if x > 0   and shape[y,x-1] != 0: h_neighbors += 1
-                    if x < W-1 and shape[y,x+1] != 0: h_neighbors += 1
+                    if y > 0     and shape[y - 1, x] != 0: v_neighbors += 1  # noqa: E272, E701
+                    if y < H - 1 and shape[y + 1, x] != 0: v_neighbors += 1  # noqa: E701
+                    if x > 0     and shape[y, x - 1] != 0: h_neighbors += 1  # noqa: E272, E701
+                    if x < W - 1 and shape[y, x + 1] != 0: h_neighbors += 1  # noqa: E701
 
                     n_neighbors = v_neighbors + h_neighbors
 
@@ -240,8 +240,8 @@ def _create_piece(name: str, shape: list[list[int]]) -> Piece:
     PIECE_COUNT += 1 
     pc = _Piece(name, id) 
     _PIECES.append(pc) 
-
     f_names = []
+
     def add(suffix: str, arr: np.ndarray):
         """
         Helper to add a variant of a piece, accounting
@@ -251,7 +251,7 @@ def _create_piece(name: str, shape: list[list[int]]) -> Piece:
         rot = None 
         unique = True 
         cur_rot = len(pc.rotations)
-        true_rot = cur_rot # assume rotation is unique 
+        true_rot = cur_rot  # assume rotation is unique 
 
         for x in pc.rotations: 
             if x.shape.shape == arr.shape and np.all(x.shape == arr): 
@@ -630,19 +630,19 @@ class Move:
 
     def __str__(self): 
         return _PIECES[self.piece].name + \
-               ROTATION_NAMES[self.rotation] + \
-               "-" + \
-               TILE_NAMES[TILES.index(self.contact)] + \
-               TILE_NAMES[TILES.index(self.to_tile)]
+            ROTATION_NAMES[self.rotation] + \
+            "-" + \
+            TILE_NAMES[TILES.index(self.contact)] + \
+            TILE_NAMES[TILES.index(self.to_tile)]
     
     def __hash__(self):
         # adds support for using Move objects in sets
         return self.piece * 2659 + \
-               self.rotation * 5393 + \
-               self.contact[0] * 571 + \
-               self.contact[1] * 683 + \
-               self.to_tile[0] * 1607 + \
-               self.to_tile[1] * 1741
+            self.rotation * 5393 + \
+            self.contact[0] * 571 + \
+            self.contact[1] * 683 + \
+            self.to_tile[0] * 1607 + \
+            self.to_tile[1] * 1741
     
     def is_equal(self, value: 'Move') -> bool: 
         return \
@@ -652,7 +652,7 @@ class Move:
             self.to_tile == value.to_tile 
 
     def __eq__(self, value: object) -> bool:
-        if type(value) == Move: 
+        if isinstance(value, Move): 
             return self.is_equal(value) 
         else: 
             return False 
@@ -1029,7 +1029,7 @@ class Board:
 
         out += f"Finished: {self.finished}"
         if self.finished: 
-            out += f"\nWinner: "
+            out += "\nWinner: "
             for p in self.winners: 
                 out += f"{self._players[p].name} "
         else: 

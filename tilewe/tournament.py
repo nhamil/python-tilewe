@@ -86,12 +86,14 @@ class Tournament:
 
         # helper for printing out engine rank summaries
         def print_engine_rankings():
-            print(f"\n{'Rank':4} {'Name':24} {'Elo':>5} {'Games':>6} {'Score':>10} {'Avg Score':>10} {'Wins':>6} {'Win Rate':>9}")
+            print(f"\n{'Rank':4} {'Name':24} {'Elo':>5} {'Games':>6} " + 
+                  f"{'Score':>10} {'Avg Score':>10} {'Wins':>6} {'Win Rate':>9}")
             ranked_engines = sorted(range(N), key=lambda x: -elos[x])
             for rank, engine in enumerate(ranked_engines):
                 win_rate = f"{(wins[engine]/games[engine]*100):>8.2f}%" if games[engine] > 0 else f"{'-':>9}"
                 avg_score = f"{(totals[engine]/games[engine]):>10.2f}" if games[engine] > 0 else f"{'-':>10}"
-                print(f"{rank:>4d} {self.engines[engine].name:24.24} {elos[engine]:>5.0f} {games[engine]:>6d} {totals[engine]:>10d} {avg_score} {wins[engine]:>6d} {win_rate}")
+                print(f"{rank:>4d} {self.engines[engine].name:24.24} {elos[engine]:>5.0f} " + 
+                      f"{games[engine]:>6d} {totals[engine]:>10d} {avg_score} {wins[engine]:>6d} {win_rate}")
 
         # prepare turn orders for the various games
         args = [] 
@@ -104,7 +106,7 @@ class Tournament:
         with multiprocessing.Pool(n_threads, initializer=signal.signal, initargs=(signal.SIGINT, signal.SIG_IGN)) as pool: 
             try:
                 for winners, scores, board, player_to_engine in pool.imap_unordered(self._play_game, args): 
-                    if len(winners) > 0: # at least one player always wins, if none then game crashed 
+                    if len(winners) > 0:  # at least one player always wins, if none then game crashed 
                         total_games += 1 
                         for p in player_to_engine:
                             games[p] += 1
@@ -128,7 +130,9 @@ class Tournament:
 
                         # output match results
                         out_names = ' '.join([f"{i:14.14}" for i in player_names])
-                        print(f"Game {total_games:>{len(str(n_games))}}: {out_names:{board.n_players * 15}}  Scores: {player_scores}  Winner(s): {', '.join(winner_names)}")
+                        print(f"Game {total_games:>{len(str(n_games))}}: {out_names:{board.n_players * 15}}  " + 
+                              f"Scores: {player_scores}  " + 
+                              f"Winner(s): {', '.join(winner_names)}")
                         if verbose_board:
                             print(board)
                             print("")
@@ -181,7 +185,7 @@ class Tournament:
             scores = [ board.scores[engine_to_player[i]] if i in engine_to_player else 0 for i in range(len(self.engines)) ]
 
             return winners, scores, board, player_to_engine
-        
-        except: 
+
+        except BaseException: 
             traceback.print_exc()
-            return [], [], board 
+            return [], [], board
