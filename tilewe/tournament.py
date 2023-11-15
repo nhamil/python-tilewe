@@ -400,4 +400,6 @@ class Tournament:
         
         except: 
             traceback.print_exc()
-            return [], [], board 
+            end_time = time.time()
+            return [], [0 for _ in range(player_to_engine)], board, player_to_engine, end_time - start_time
+        
