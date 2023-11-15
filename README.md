@@ -316,6 +316,6 @@ Anything non-trivial _should_ have a set of unit tests created for it. These bel
 
 We use the `unittest` package. Your tests should be contained in a class like `class TestTilewe(unittest.TestCase):` as functions like `def test_thing(self):`.
 
-Tests should be determinstic, that is to say, they should always have the same results for the given inputs. For gameplay testing fixed move orders should be used and it's best to provide values to functions that would otherwise be defaulted, in case those defaults change. Additionally, tests should try to keep their expected runtime as low as possible so we can evaluate things quickly on commit and on pull request.
+Tests should be determinstic, that is to say, they should always have the same results for the given inputs. For gameplay testing fixed move orders (or seeded pseudorandomness) should be used and it is best to provide values to functions that would otherwise be defaulted, in case those defaults change. Additionally, tests should try to keep their expected runtime as low as possible so we can evaluate things quickly on commit and on pull request.
 
 To run tests, use `pytest` or more explicitly `python3.10 -m pytest` if `pytest` has module pathing issues.

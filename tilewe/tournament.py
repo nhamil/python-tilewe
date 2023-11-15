@@ -261,8 +261,7 @@ class Tournament:
 
         # helper for getting engine rank summaries
         def get_engine_rankings() -> str:
-            out = ""
-            out += f"\n{'Rank':4} {'Name':24} {'Elo':>5} {'Games':>6} {'Score':>10} "
+            out = f"\n{'Rank':4} {'Name':24} {'Elo':>5} {'Games':>6} {'Score':>10} "
             out += f"{'Avg Score':>10} {'Wins':>6} {'Win Rate':>9}\n"
             ranked_engines = sorted(range(N), key=lambda x: -elos[x])
             for rank, engine in enumerate(ranked_engines):
