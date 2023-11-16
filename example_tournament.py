@@ -7,8 +7,8 @@ import tilewe.tournament
 tournament = tilewe.tournament.Tournament([
     tilewe.engine.MaximizeMoveDifferenceEngine(), 
     tilewe.engine.LargestPieceEngine(), 
-    tilewe.engine.TileWeight("WallCrawler", 'wall_crawl'),
-    tilewe.engine.TileWeight("Turtle", 'turtle'),
+    tilewe.engine.TileWeightEngine("WallCrawler", 'wall_crawl'),
+    tilewe.engine.TileWeightEngine("Turtle", 'turtle'),
     tilewe.engine.MostOpenCornersEngine(), 
     tilewe.engine.RandomEngine(),
 ])

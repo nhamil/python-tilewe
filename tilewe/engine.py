@@ -151,7 +151,7 @@ class MaximizeMoveDifferenceEngine(Engine):
 
         return max(moves, key=eval_after_move)
     
-class TileWeight(Engine):
+class TileWeightEngine(Engine):
     """
     Evalutes tile ownership after each legal move and selects the move that maximizes
     ownership of tiles with the highest scores. Supports the built-in weight maps below
