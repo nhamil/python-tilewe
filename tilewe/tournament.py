@@ -404,4 +404,4 @@ class Tournament:
         except BaseException: 
             traceback.print_exc()
             end_time = time.time()
-            return [], [0 for _ in range(player_to_engine)], board, player_to_engine, end_time - start_time
+            return [], None, None, None, None
