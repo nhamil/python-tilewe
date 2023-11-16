@@ -247,7 +247,9 @@ class TileWeightEngine(Engine):
                 owned_tiles = get_owned_tiles_list(board, cur_player)
                 return sum([t[0] * t[1] for t in zip(owned_tiles, self.weights)])
 
-        moves = random.shuffle(board.generate_legal_moves(unique=True))
+        moves = board.generate_legal_moves(unique=True)
+        random.shuffle(moves)
+
         if board.ply < board.n_players:
             #  prune to one corner to reduce moves to evaluate
             corner = board.player_corners(cur_player)[0]
