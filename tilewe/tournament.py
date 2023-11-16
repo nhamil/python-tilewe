@@ -401,5 +401,5 @@ class Tournament:
         except: 
             traceback.print_exc()
             end_time = time.time()
-            return [], [0 for _ in range(player_to_engine)], board, player_to_engine, end_time - start_time
+            return [], [0 for _ in range(len(player_to_engine))], board, player_to_engine, end_time - start_time
         
