@@ -286,8 +286,8 @@ First, ensure you've installed and are using Python 3.10 in your virtual environ
 Make sure `pip` is up to date and install both dev dependencies and project dependencies:
 ```bash
 $ python3.10 -m pip install --upgrade pip
-$ python3.10 -m pip install flake8 pytest
 $ python3.10 -m pip install -r requirements.txt
+$ python3.10 -m pip install -r requirements-dev.txt
 ```
 
 To locally install `tilewe` as a package so you can `import tilewe` anywhere (such as the `/tests` directory...) do:
@@ -304,8 +304,12 @@ cp .github/pre-commit.sample .git/hooks/pre-commit
 
 In this project we enforce `PEP8` style rules, except when we don't like them. You can verify the code against our selected/excluded style rules with these commands:
 ```bash
-flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-flake8 . --count --exit-zero --max-complexity=20 --max-line-length=127 --ignore=W291,W293,W504,E128,E201,E202,E252,E302,E305 --statistics
+flake8 tilewe example_*.py --count --select=E9,F63,F7,F82 --show-source --statistics
+flake8 tilewe example_*.py --count --exit-zero --max-complexity=20 --max-line-length=127 --ignore=W291,W293,W504,E128,E201,E202,E252,E302,E305 --statistics
+```
+or more simply:
+```bash
+./scripts/validate_style.sh
 ```
 
 If you have a good case for rules that should be enforced or should be excluded, just propose the change to select and ignore lists.
