@@ -154,11 +154,12 @@ class MaximizeMoveDifferenceEngine(Engine):
 class TileWeight(Engine):
     """
     Evalutes tile ownership after each legal move and selects the move that maximizes
-    ownership of tiles with the highest scores.
+    ownership of tiles with the highest scores. Supports the built-in weight maps below
+    and passing in your own custom set of tile weights, which must be a list of 400 floats.
 
     Strength depends entirely on the strategy encapsulated by the given weights!
-        'wall_crawl' weights seem moderate (better than random/open corners but weaker than others)
-        'turtle' weights seem fairly weak (better than random but weaker than others)
+        'wall_crawl' seems moderate (better than random/open corners but weaker than others)
+        'turtle' seems fairly weak (better than random but weaker than others)
     """
 
     WALL_CRAWL_WEIGHTS: list[float] = [
