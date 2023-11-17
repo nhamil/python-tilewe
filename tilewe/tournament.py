@@ -288,7 +288,11 @@ class Tournament:
         start_time = time.time()
         total_time = 0.0
 
-        init_func, init_args = [None, None] if platform.system() == "Windows" else [signal.signal, (signal.SIGINT, signal.SIG_IGN)]
+        if platform.system() == "Windows":
+            init_func, init_args = [None, None]
+        else:
+            init_func, init_args = [signal.signal, (signal.SIGINT, signal.SIG_IGN)]
+
         with multiprocessing.Pool(n_threads, initializer=init_func, initargs=init_args) as pool: 
             try:
                 for winners, scores, board, player_to_engine, time_sec in pool.imap_unordered(self._play_game, args): 
