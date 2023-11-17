@@ -90,9 +90,6 @@ def compute_elo_adjustment_n(elos: list[float], scores: list[int], K: int = 32):
             if player1 == player2:
                 continue
 
-            # any player can win/draw/lose to any other player by score
-            #outcome = 0 if scores[player1] < scores[player2] else 1 if scores[player1] > scores[player2] else 0.5
-
             # any losers lose to winners and draw with other losers / any winners win over losers and draw with other winners
             player1_win = scores[player1] == winning_score
             player2_win = scores[player2] == winning_score

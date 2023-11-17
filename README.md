@@ -276,3 +276,51 @@ Get a list of open corners a player has: `board.player_corners(player)`
 Whether or not a player can still play: `board.can_play(player)`
 
 Get the color of a tile: `board.color_at(tile)`
+
+## Contributors
+
+### Setup
+
+First, ensure you've installed and are using Python 3.10 in your virtual environment or conda environment.
+
+Make sure `pip` is up to date and install both dev dependencies and project dependencies:
+```bash
+$ python3 -m pip install --upgrade pip
+$ python3 -m pip install -r requirements.txt
+$ python3 -m pip install -r requirements-dev.txt
+```
+
+To locally install `tilewe` as a package so you can `import tilewe` anywhere (such as the `/tests` directory...) do:
+```bash
+$ python3 -m pip install -e ./tilewe
+```
+
+To enable pre-commit hooks to catch issues locally instead of on Github workflows, copy the `.github/pre-commit.sample` script to `.git/hooks/pre-commit`, either with your file explorer or like:
+```bash
+cp .github/pre-commit.sample .git/hooks/pre-commit
+```
+Depending on your system/environment setup, you may need to edit your version in `.git/hooks` to handle the `flake8` and `pytest` calls as your environment expects. For example, this could be changing the calls to specifically use `python3.10 -m` instead of `python3 -m` or similar.
+
+### Style
+
+In this project we enforce `PEP8` style rules, except when we don't like them. You can verify the code against our selected/excluded style rules with these commands:
+```bash
+flake8 tilewe example_*.py --count --select=E9,F63,F7,F82 --show-source --statistics
+flake8 tilewe example_*.py --count --exit-zero --max-complexity=20 --max-line-length=127 --ignore=W291,W293,W504,E128,E201,E202,E252,E302,E305 --statistics
+```
+or more simply:
+```bash
+./scripts/validate_style.sh
+```
+
+If you have a good case for rules that should be enforced or should be excluded, just propose the change to select and ignore lists.
+
+### Tests
+
+Anything non-trivial _should_ have a set of unit tests created for it. These belong in the `tilewe/tests` directory and must be named `test_thing.py`.
+
+We use the `unittest` package. Your tests should be contained in a class like `class TestTilewe(unittest.TestCase):` as functions like `def test_thing(self):`.
+
+Tests should be determinstic, that is to say, they should always have the same results for the given inputs. For gameplay testing fixed move orders (or seeded pseudorandomness) should be used and it is best to provide values to functions that would otherwise be defaulted, in case those defaults change. Additionally, tests should try to keep their expected runtime as low as possible so we can evaluate things quickly on commit and on pull request.
+
+To run tests, use `pytest` or more explicitly `python3.10 -m pytest` if `pytest` has module pathing issues.

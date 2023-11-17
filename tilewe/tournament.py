@@ -262,8 +262,8 @@ class Tournament:
 
         # helper for getting engine rank summaries
         def get_engine_rankings() -> str:
-            out = ""
-            out += f"\n{'Rank':4} {'Name':24} {'Elo':>5} {'Games':>6} {'Score':>10} {'Avg Score':>10} {'Wins':>6} {'Win Rate':>9}\n"
+            out = f"\n{'Rank':4} {'Name':24} {'Elo':>5} {'Games':>6} {'Score':>10} "
+            out += f"{'Avg Score':>10} {'Wins':>6} {'Win Rate':>9}\n"
             ranked_engines = sorted(range(N), key=lambda x: -elos[x])
             for rank, engine in enumerate(ranked_engines):
                 name = self.engines[engine].name
@@ -273,7 +273,8 @@ class Tournament:
                 win_rate = f"{(win_count / game_count * 100):>8.2f}%" if game_count > 0 else f"{'-':>9}"
                 avg_score = f"{(score / game_count):>10.2f}" if game_count > 0 else f"{'-':>10}"
 
-                out += f"{rank:>4d} {name:24.24} {elo:>5.0f} {game_count:>6d} {score:>10d} {avg_score} {win_count:>6d} {win_rate}\n"
+                out += f"{rank:>4d} {name:24.24} {elo:>5.0f} {game_count:>6d} {score:>10d} "
+                out += f"{avg_score} {win_count:>6d} {win_rate}\n"
             return out
 
         # prepare turn orders for the various games
@@ -287,11 +288,15 @@ class Tournament:
         start_time = time.time()
         total_time = 0.0
 
-        init_func, init_args = [None, None] if platform.system() == "Windows" else [signal.signal, (signal.SIGINT, signal.SIG_IGN)]
+        if platform.system() == "Windows":
+            init_func, init_args = [None, None]
+        else:
+            init_func, init_args = [signal.signal, (signal.SIGINT, signal.SIG_IGN)]
+
         with multiprocessing.Pool(n_threads, initializer=init_func, initargs=init_args) as pool: 
             try:
                 for winners, scores, board, player_to_engine, time_sec in pool.imap_unordered(self._play_game, args): 
-                    if len(winners) > 0: # at least one player always wins, if none then game crashed 
+                    if len(winners) > 0:  # at least one player always wins, if none then game crashed 
                         total_games += 1 
                         for p in player_to_engine:
                             games[p] += 1
@@ -328,7 +333,9 @@ class Tournament:
 
                         # output match results
                         out_names = ' '.join([f"{i:14.14}" for i in player_names])
-                        print(f"Game {total_games:>{len(str(n_games))}}: {out_names:{board.n_players * 15}}  Scores: {player_scores}  Winner(s): {', '.join(winner_names)}")
+                        print(f"Game {total_games:>{len(str(n_games))}}: {out_names:{board.n_players * 15}}  " + 
+                              f"Scores: {player_scores}  " + 
+                              f"Winner(s): {', '.join(winner_names)}")
                         if verbose_board:
                             print(board)
                             print("")
@@ -401,8 +408,7 @@ class Tournament:
 
             return winners, scores, board, player_to_engine, end_time - start_time
         
-        except: 
+        except BaseException: 
             traceback.print_exc()
             end_time = time.time()
-            return [], [0 for _ in range(len(player_to_engine))], board, player_to_engine, end_time - start_time
-        
+            return [], None, None, None, None

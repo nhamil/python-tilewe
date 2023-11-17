@@ -1,7 +1,6 @@
-import copy 
 import unittest 
 
-import tilewe 
+import tilewe
 
 class TestTilewe(unittest.TestCase): 
     
