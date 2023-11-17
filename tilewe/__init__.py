@@ -613,7 +613,9 @@ class _Player:
             if not oob and self.board._tiles[pt] == self.id + 1:
                 bad |= _PRP_WITH_ADJ_REL_COORD[rel]
 
-        self.corners[tile] = self._prps & ~bad
+        prps = self._prps & ~bad
+        if prps > 0:
+            self.corners[tile] = self._prps & ~bad
 
 class Move:
     """
