@@ -1,5 +1,6 @@
 import multiprocessing
 import traceback
+import platform
 import random
 import signal
 import time
@@ -285,7 +286,9 @@ class Tournament:
         # play games with the given level of concurrency
         start_time = time.time()
         total_time = 0.0
-        with multiprocessing.Pool(n_threads, initializer=signal.signal, initargs=(signal.SIGINT, signal.SIG_IGN)) as pool: 
+
+        init_func, init_args = [None, None] if platform.system() == "Windows" else [signal.signal, (signal.SIGINT, signal.SIG_IGN)]
+        with multiprocessing.Pool(n_threads, initializer=init_func, initargs=init_args) as pool: 
             try:
                 for winners, scores, board, player_to_engine, time_sec in pool.imap_unordered(self._play_game, args): 
                     if len(winners) > 0: # at least one player always wins, if none then game crashed 
