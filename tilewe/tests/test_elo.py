@@ -42,19 +42,19 @@ class TestTilewe(unittest.TestCase):
         self.assertEqual(tilewe.elo.compute_elo_adjustment_2(1500, 1500, 0.5, K), 0.0)
         
         # loss against 100 stronger opponent gives -11.5179 Elo with K = 32
-        self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 1600, 0, 32), -11.5179, 4)
+        self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 1600, 0, K), -11.5179, 4)
         
         # win against 100 stronger opponent gives +20.4821 Elo with K = 32
-        self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 1600, 1, 32), 20.4821, 4)
+        self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 1600, 1, K), 20.4821, 4)
 
         # draw against 100 stronger opponent gives +4.4821 Elo with K = 32
-        self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 1600, 0.5, 32), 4.4821, 4)
+        self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 1600, 0.5, K), 4.4821, 4)
         
         # loss against 1000 stronger opponent gives close to -0 Elo
-        self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 2500, 0, 32), -0.1009, 4)
+        self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 2500, 0, K), -0.1009, 4)
         
         # win against 1000 stronger opponent gives nearly +K Elo
-        self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 2500, 1, 32), 31.8991, 4)
+        self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 2500, 1, K), 31.8991, 4)
 
         # draw against 1000 stronger opponent gives roughly +K/2 Elo
-        self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 2500, 0.5, 32), 15.8991, 4)
+        self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 2500, 0.5, K), 15.8991, 4)
