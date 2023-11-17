@@ -155,7 +155,7 @@ class TileWeightEngine(Engine):
     """
     Evalutes tile ownership after each legal move and selects the move that maximizes
     ownership of tiles with the highest scores. Supports the built-in weight maps below
-    and passing in your own custom set of tile weights, which must be a list of 400 floats.
+    and passing in your own custom set of tile weights, which must be a list of 400 values.
     Note that weights are ordered [A01, A02, ..., A20, B01, B02, ..., S20, T01, T02, ..., T20].
 
     Strength depends entirely on the strategy encapsulated by the given weights!
