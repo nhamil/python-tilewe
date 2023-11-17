@@ -424,6 +424,16 @@ _PRP_WITH_PC_ID: dict[int, _PrpSet] = defaultdict(_PrpSet)
 for _pt in _PIECE_ROTATION_POINTS: 
     _PRP_WITH_PC_ID[_pt.piece_id] |= _pt.as_set
 
+def tile_to_coords(tile: Tile) -> tuple[int, int]: 
+    return tile 
+
+def coords_to_tile(coords: tuple[int, int]) -> Tile: 
+    return coords 
+
+def tile_to_index(tile: Tile) -> int: 
+    # y * width + x
+    return tile[0] * 20 + tile[1]
+
 def out_of_bounds(tile: Tile) -> bool: 
     if tile[0] < 0 or tile[0] >= 20: 
         return True 

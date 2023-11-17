@@ -163,30 +163,30 @@ class TileWeightEngine(Engine):
         'turtle' seems fairly weak (better than random but weaker than others)
     """
 
-    WALL_CRAWL_WEIGHTS: list[float] = [
-        1, 1,   1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,   1,  
-        1, 0.9, 0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9, 1,  
-        1, 0.9, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.9, 1,  
-        1, 0.9, 0.75, 0.6,  0.6,  0.6,  0.6,  0.6,  0.6,  0.6,  0.6,  0.6 , 0.6,  0.6,  0.6,  0.6,  0.6,  0.75, 0.9, 1,  
-        1, 0.9, 0.75, 0.6,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.6,  0.75, 0.9, 1,  
-        1, 0.9, 0.75, 0.6,  0.5,  0.4,  0.4,  0.4,  0.4,  0.4,  0.4,  0.4,  0.4,  0.4,  0.4,  0.5,  0.6,  0.75, 0.9, 1,  
-        1, 0.9, 0.75, 0.6,  0.5,  0.4,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.4,  0.5,  0.6,  0.75, 0.9, 1,  
-        1, 0.9, 0.75, 0.6,  0.5,  0.4,  0.3,  0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.3,  0.4,  0.5,  0.6,  0.75, 0.9, 1,  
-        1, 0.9, 0.75, 0.6,  0.5,  0.4,  0.3,  0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.3,  0.4,  0.5,  0.6,  0.75, 0.9, 1,  
-        1, 0.9, 0.75, 0.6,  0.5,  0.4,  0.3,  0.25, 0.1,  0.1,  0.1,  0.1,  0.25, 0.3,  0.4,  0.5,  0.6,  0.75, 0.9, 1,  
-        1, 0.9, 0.75, 0.6,  0.5,  0.4,  0.3,  0.25, 0.1,  0,    0,    0.1,  0.25, 0.3,  0.4,  0.5,  0.6,  0.75, 0.9, 1,  
-        1, 0.9, 0.75, 0.6,  0.5,  0.4,  0.3,  0.25, 0.1,  0.1,  0.1,  0.1,  0.25, 0.3,  0.4,  0.5,  0.6,  0.75, 0.9, 1,  
-        1, 0.9, 0.75, 0.6,  0.5,  0.4,  0.3,  0.25, 0.25, 0.25, 0.25, 0.25, 0.25, 0.3,  0.4,  0.5,  0.6,  0.75, 0.9, 1,  
-        1, 0.9, 0.75, 0.6,  0.5,  0.4,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.3,  0.4,  0.5,  0.6,  0.75, 0.9, 1,  
-        1, 0.9, 0.75, 0.6,  0.5,  0.4,  0.4,  0.4,  0.4,  0.4,  0.4,  0.4,  0.4,  0.4,  0.4,  0.5,  0.6,  0.75, 0.9, 1,  
-        1, 0.9, 0.75, 0.6,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.6,  0.75, 0.9, 1,  
-        1, 0.9, 0.75, 0.6,  0.6,  0.6,  0.6,  0.6,  0.6,  0.6,  0.6,  0.6,  0.6,  0.6,  0.6,  0.6,  0.6,  0.75, 0.9, 1,  
-        1, 0.9, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.9, 1,  
-        1, 0.9, 0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9,  0.9, 1,  
-        1, 1,   1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,    1,   1
+    WALL_CRAWL_WEIGHTS: list[int] = [
+        100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 
+        100, 90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  100, 
+        100, 90,  75,  75,  75,  75,  75,  75,  75,  75,  75,  75,  75,  75,  75,  75,  75,  75,  90,  100, 
+        100, 90,  75,  60,  60,  60,  60,  60,  60,  60,  60,  60,  60,  60,  60,  60,  60,  75,  90,  100, 
+        100, 90,  75,  60,  50,  50,  50,  50,  50,  50,  50,  50,  50,  50,  50,  50,  60,  75,  90,  100, 
+        100, 90,  75,  60,  50,  40,  40,  40,  40,  40,  40,  40,  40,  40,  40,  50,  60,  75,  90,  100, 
+        100, 90,  75,  60,  50,  40,  30,  30,  30,  30,  30,  30,  30,  30,  40,  50,  60,  75,  90,  100, 
+        100, 90,  75,  60,  50,  40,  30,  25,  25,  25,  25,  25,  25,  30,  40,  50,  60,  75,  90,  100, 
+        100, 90,  75,  60,  50,  40,  30,  25,  10,  10,  10,  10,  25,  30,  40,  50,  60,  75,  90,  100, 
+        100, 90,  75,  60,  50,  40,  30,  25,  10,  0,   0,   10,  25,  30,  40,  50,  60,  75,  90,  100, 
+        100, 90,  75,  60,  50,  40,  30,  25,  10,  0,   0,   10,  25,  30,  40,  50,  60,  75,  90,  100, 
+        100, 90,  75,  60,  50,  40,  30,  25,  10,  10,  10,  10,  25,  30,  40,  50,  60,  75,  90,  100, 
+        100, 90,  75,  60,  50,  40,  30,  25,  25,  25,  25,  25,  25,  30,  40,  50,  60,  75,  90,  100, 
+        100, 90,  75,  60,  50,  40,  30,  30,  30,  30,  30,  30,  30,  30,  40,  50,  60,  75,  90,  100, 
+        100, 90,  75,  60,  50,  40,  40,  40,  40,  40,  40,  40,  40,  40,  40,  50,  60,  75,  90,  100, 
+        100, 90,  75,  60,  50,  50,  50,  50,  50,  50,  50,  50,  50,  50,  50,  50,  60,  75,  90,  100, 
+        100, 90,  75,  60,  60,  60,  60,  60,  60,  60,  60,  60,  60,  60,  60,  60,  60,  75,  90,  100, 
+        100, 90,  75,  75,  75,  75,  75,  75,  75,  75,  75,  75,  75,  75,  75,  75,  75,  75,  90,  100, 
+        100, 90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  90,  100, 
+        100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
     ]
 
-    TURTLE_WEIGHTS: list[float] = [
+    TURTLE_WEIGHTS: list[int] = [
         512, 256, 128, 64, 32, 16, 8, 4, 2, 1, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 
         256, 256, 128, 64, 32, 16, 8, 4, 2, 1, 1, 2, 4, 8, 16, 32, 64, 128, 256, 256, 
         128, 128, 128, 64, 32, 16, 8, 4, 2, 1, 1, 2, 4, 8, 16, 32, 64, 128, 128, 128, 
@@ -214,7 +214,7 @@ class TileWeightEngine(Engine):
         'turtle': TURTLE_WEIGHTS
     }
 
-    def __init__(self, name: str="TileWeight", weight_map: str='wall_crawl', custom_weights: list[float]=None): 
+    def __init__(self, name: str="TileWeight", weight_map: str='wall_crawl', custom_weights: list[int | float]=None): 
         """
         Current `weight_map` built-in options are 'wall_crawl' and 'turtle'
         Can optionally provide a custom set of weights instead
@@ -224,7 +224,7 @@ class TileWeightEngine(Engine):
 
         if custom_weights is not None:
             if len(custom_weights) != 20 * 20:
-                raise Exception("TileWeightEngine custom_weights must be a list of exactly 400 floats")
+                raise Exception("TileWeightEngine custom_weights must be a list of exactly 400 values")
             self.weights = custom_weights
         
         else:
@@ -236,16 +236,15 @@ class TileWeightEngine(Engine):
 
         cur_player = board.current_player
 
-        def get_owned_tiles_list(board: tilewe.Board, player: tilewe.Color):
-            ownership = []
-            for tile in tilewe.TILES:
-                ownership.append(1 if board.color_at(tile) == player else 0)
-            return ownership   
+        def evaluate_move_weight(move: tilewe.Move) -> float: 
+            total: float = 0.0
 
-        def tile_score_after_move(move: tilewe.Move) -> int: 
-            with MoveExecutor(board, move):
-                owned_tiles = get_owned_tiles_list(board, cur_player)
-                return sum([t[0] * t[1] for t in zip(owned_tiles, self.weights)])
+            to_coords = tilewe.tile_to_coords(move.to_tile) 
+            for coords in tilewe.piece_tile_coords(move.piece, move.rotation, move.contact): 
+                coords = (coords[0] + to_coords[0], coords[1] + to_coords[1])
+                total += self.weights[coords[1] * 20 + coords[0]]
+
+            return total
 
         moves = board.generate_legal_moves(unique=True)
         random.shuffle(moves)
@@ -255,4 +254,4 @@ class TileWeightEngine(Engine):
             corner = board.player_corners(cur_player)[0]
             moves = [i for i in moves if i.to_tile == corner]
 
-        return max(moves, key=tile_score_after_move)
+        return max(moves, key=evaluate_move_weight)
