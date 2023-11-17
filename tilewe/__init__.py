@@ -438,12 +438,8 @@ def tile_to_index(tile: Tile) -> int:
     # y * width + x
     return tile[0] * 20 + tile[1]
 
-def out_of_bounds(tile: Tile) -> bool: 
-    if tile[0] < 0 or tile[0] >= 20: 
-        return True 
-    if tile[1] < 0 or tile[1] >= 20: 
-        return True 
-    return False
+def out_of_bounds(tile: Tile) -> bool:
+    return not (0 <= tile[0] < 20 and 0 <= tile[1] < 20)
 
 # helpers for retrieving information about game pieces
 def n_piece_contacts(piece: Piece) -> int: 
@@ -613,12 +609,10 @@ class _Player:
             pt = (rel[0] + tile[0], rel[1] + tile[1])
             if out_of_bounds(pt) or self.board._tiles[pt] != 0:
                 bad |= _PRP_WITH_REL_COORD[rel]
-            if not out_of_bounds(pt) and self.board._tiles[pt] == self.id + 1:
+            elif self.board._tiles[pt] == self.id + 1:
                 bad |= _PRP_WITH_ADJ_REL_COORD[rel]
 
-        prps = self._prps & ~bad
-        if prps > 0:
-            self.corners[tile] = prps
+        self.corners[tile] = self._prps & ~bad
 
 class Move:
     """
