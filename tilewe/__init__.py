@@ -607,9 +607,10 @@ class _Player:
 
         for rel in _PRP_REL_COORDS: 
             pt = (rel[0] + tile[0], rel[1] + tile[1])
-            if out_of_bounds(pt) or self.board._tiles[pt] != 0:
+            oob = out_of_bounds(pt)
+            if oob or self.board._tiles[pt] != 0:
                 bad |= _PRP_WITH_REL_COORD[rel]
-            elif self.board._tiles[pt] == self.id + 1:
+            if not oob and self.board._tiles[pt] == self.id + 1:
                 bad |= _PRP_WITH_ADJ_REL_COORD[rel]
 
         self.corners[tile] = self._prps & ~bad
