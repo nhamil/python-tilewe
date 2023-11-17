@@ -1,4 +1,5 @@
 from collections import defaultdict
+from dataclasses import dataclass
 import sys
 
 import numpy as np 
@@ -465,6 +466,7 @@ def piece_tiles(piece: Piece, rotation: Rotation, contact: Tile=None) -> list[Ti
 def piece_tile_coords(piece: Piece, rotation: Rotation, contact: Tile=None) -> list[tuple[int, int]]: 
     return piece_tiles(piece, rotation, contact)
 
+@dataclass
 class _PlayerState: 
     """
     Internal/private minimal representation of a player's state data
@@ -482,11 +484,10 @@ class _PlayerState:
         The player's current score in the active game
     """
 
-    def __init__(self, prps: _PrpSet, corners: dict[Tile, _PrpSet], has_played: bool, score: int): 
-        self.prps = prps 
-        self.corners = corners 
-        self.has_played = has_played 
-        self.score = score
+    prps: _PrpSet
+    corners: dict[Tile, _PrpSet]
+    has_played: bool
+    score: int
 
     def copy(self) -> '_PlayerState': 
         out = _PlayerState.__new__(_PlayerState) 
@@ -684,6 +685,7 @@ class Move:
             self.to_tile     
         )
 
+@dataclass
 class _BoardState: 
     """
     Internal/private minimal representation of a board's state data
@@ -697,9 +699,8 @@ class _BoardState:
         The list of all Tile objects on the board
     """
 
-    def __init__(self, cur_player: int, tiles: list[Tile]): 
-        self.cur_player = cur_player
-        self.tiles = tiles 
+    cur_player: int
+    tiles: list[Tile]
 
 class Board: 
     """
