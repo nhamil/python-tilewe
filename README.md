@@ -285,20 +285,21 @@ First, ensure you've installed and are using Python 3.10 in your virtual environ
 
 Make sure `pip` is up to date and install both dev dependencies and project dependencies:
 ```bash
-$ python3.10 -m pip install --upgrade pip
-$ python3.10 -m pip install -r requirements.txt
-$ python3.10 -m pip install -r requirements-dev.txt
+$ python3 -m pip install --upgrade pip
+$ python3 -m pip install -r requirements.txt
+$ python3 -m pip install -r requirements-dev.txt
 ```
 
 To locally install `tilewe` as a package so you can `import tilewe` anywhere (such as the `/tests` directory...) do:
 ```bash
-$ python3.10 -m pip install -e ./tilewe
+$ python3 -m pip install -e ./tilewe
 ```
 
 To enable pre-commit hooks to catch issues locally instead of on Github workflows, copy the `.github/pre-commit.sample` script to `.git/hooks/pre-commit`, either with your file explorer or like:
 ```bash
 cp .github/pre-commit.sample .git/hooks/pre-commit
 ```
+Depending on your system/environment setup, you may need to edit your version in `.git/hooks` to handle the `flake8` and `pytest` calls as your environment expects. For example, this could be changing the calls to specifically use `python3.10 -m` instead of `python3 -m` or similar.
 
 ### Style
 
