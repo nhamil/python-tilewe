@@ -5,7 +5,7 @@ authors = [
   { name="Nicholas Hamilton", email="nh.contact.1@gmail.com" },
   { name="Michael Conard", email="michaelaconard314@gmail.com" },
 ]
-description = "A tile placing game for AI development fun"
+description = "A tile-placing game for AI development fun"
 readme = "README.md"
 requires-python = "==3.10.*"
 classifiers = [
