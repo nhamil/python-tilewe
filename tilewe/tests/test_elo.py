@@ -26,7 +26,7 @@ class TestTilewe(unittest.TestCase):
         # 99.01% win rate against 800 weaker enemy
         self.assertAlmostEqual(tilewe.elo.elo_win_probability(2300, 1500, C), 0.9901, 4)
 
-        #  0.99% win rate against 800 stronger enemy
+        # 0.99% win rate against 800 stronger enemy
         self.assertAlmostEqual(tilewe.elo.elo_win_probability(1500, 2300, C), 0.0099, 4)
 
     def test_elo_rank_change(self):
