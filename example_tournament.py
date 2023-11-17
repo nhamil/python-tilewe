@@ -5,14 +5,15 @@ import tilewe.engine
 import tilewe.tournament
 
 tournament = tilewe.tournament.Tournament([
-    tilewe.engine.LargestPieceEngine(), 
-    tilewe.engine.MostOpenCornersEngine(), 
     tilewe.engine.MaximizeMoveDifferenceEngine(), 
-    tilewe.engine.WallCrawlerEngine(),
-    tilewe.engine.RandomEngine()
+    tilewe.engine.LargestPieceEngine(), 
+    tilewe.engine.TileWeightEngine("WallCrawler", 'wall_crawl'),
+    tilewe.engine.TileWeightEngine("Turtle", 'turtle'),
+    tilewe.engine.MostOpenCornersEngine(), 
+    tilewe.engine.RandomEngine(),
 ])
 
-results = tournament.play(10, n_threads=multiprocessing.cpu_count(), move_seconds=15)
+results = tournament.play(100, n_threads=multiprocessing.cpu_count(), move_seconds=15)
 
 # print the result of game 1
 print(results.match_data[0].board)
