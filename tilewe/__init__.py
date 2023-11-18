@@ -816,7 +816,7 @@ class Board:
         pieces = set() 
         prps = self._players[player]._prps 
 
-        while prps != 0: 
+        while prps: 
             # get least significant bit
             prp = (prps & -prps).bit_length() - 1
             # remove it so the next LSB is another PRP
@@ -842,7 +842,7 @@ class Board:
         player = self._players[player]
         prps = player.corners.get(tile, 0)
 
-        return (prps & (1 << prp_id)) != 0
+        return prps & (1 << prp_id)
 
     def is_legal(self, move: Move, for_player: Color=None) -> bool: 
         player = self._players[self.current_player if for_player is None else for_player]
@@ -872,7 +872,7 @@ class Board:
             return False 
 
         # permutation must fit at the corner square
-        return (prps & prp.as_set) != 0
+        return prps & prp.as_set
 
     def n_legal_moves(self, unique: bool=True, for_player: Color=None): 
         player = self._players[self.current_player if for_player is None else for_player]
@@ -883,7 +883,7 @@ class Board:
                 total += prps.bit_count() 
         else: 
             for prps in player.corners.values(): 
-                while prps != 0: 
+                while prps: 
                     # get least significant bit
                     prp_id = (prps & -prps).bit_length() - 1
                     # remove it so the next LSB is another PRP
@@ -903,7 +903,7 @@ class Board:
         # duplicate for loop so that we don't check the if statement for every permutation
         if unique: 
             for to_sq, prps in player.corners.items(): 
-                while prps != 0: 
+                while prps: 
                     # get least significant bit
                     prp_id = (prps & -prps).bit_length() - 1
                     # remove it so the next LSB is another PRP
@@ -919,7 +919,7 @@ class Board:
                     ))
         else: 
             for to_sq, prps in player.corners.items(): 
-                while prps != 0: 
+                while prps: 
                     # get least significant bit
                     prp_id = (prps & -prps).bit_length() - 1
                     # remove it so the next LSB is another PRP
