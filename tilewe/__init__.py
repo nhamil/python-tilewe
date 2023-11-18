@@ -1,4 +1,3 @@
-from collections import defaultdict
 from dataclasses import dataclass
 import sys
 
@@ -78,7 +77,7 @@ def coords_to_tile(coords: tuple[int, int]) -> Tile:
 def tile_to_index(tile: Tile) -> int: 
     return tile
 
-def out_of_bounds(coords: tuple[int, int]) -> bool:
+def out_of_bounds(coords: tuple[int, int]) -> int:
     return not (0 <= coords[0] < 20 and 0 <= coords[1] < 20)
 
 def in_bounds(coords: tuple[int, int]) -> bool:
@@ -238,7 +237,7 @@ class _PieceRotationPoint:
 
 # internal global data for all game pieces
 # initialized on library load one time below
-PIECE_COUNT = 0
+N_PIECES = 0
 _PIECES: list[_Piece] = []
 _PIECE_ROTATIONS: list[_PieceRotation] = []
 _PIECE_ROTATION_POINTS: list[_PieceRotationPoint] = []
@@ -262,9 +261,9 @@ def _create_piece(name: str, shape: list[list[int]]) -> Piece:
         The new id assigned to this piece
     """
 
-    global PIECE_COUNT 
-    id = PIECE_COUNT 
-    PIECE_COUNT += 1 
+    global N_PIECES 
+    id = N_PIECES 
+    N_PIECES += 1 
     pc = _Piece(name, id) 
     _PIECES.append(pc) 
     f_names = []
@@ -429,25 +428,34 @@ Z5 = _create_piece("Z5", [
     [0, 1, 1]
 ])
 
+def create_rel_tile(pt: tuple[int, int]) -> Tile: 
+    return ((pt[0] + 32) << 6) + pt[1] + 32
+
+_REL_TILE_COORDS = [
+    (y - 32, x - 32) for y in range(64) for x in range(64)
+]
+
 # compute relative coordinates for the pieces
-_PRP_WITH_REL_COORD: dict[Tile, _PrpSet] = defaultdict(_PrpSet)
+_PRP_WITH_REL_COORD: list[_PrpSet] = [0] * (64 * 64)
 for _pt in _PIECE_ROTATION_POINTS: 
     for _tile in _pt.rel_tiles: 
-        _PRP_WITH_REL_COORD[_tile] |= _pt.as_set
+        _PRP_WITH_REL_COORD[create_rel_tile(_tile)] |= _pt.as_set
 
-_PRP_WITH_ADJ_REL_COORD: dict[Tile, _PrpSet] = defaultdict(_PrpSet)
+_PRP_WITH_ADJ_REL_COORD: list[_PrpSet] = [0] * (64 * 64)
 for _pt in _PIECE_ROTATION_POINTS: 
     for _tile in _pt.rel_adjacent: 
-        _PRP_WITH_ADJ_REL_COORD[_tile] |= _pt.as_set
+        _PRP_WITH_ADJ_REL_COORD[create_rel_tile(_tile)] |= _pt.as_set
 
-_PRP_REL_COORDS: set[Tile] = set()
-for _pt in _PRP_WITH_REL_COORD:
-    _PRP_REL_COORDS.add(_pt)
-for _pt in _PRP_WITH_ADJ_REL_COORD:
-    _PRP_REL_COORDS.add(_pt)
+_PRP_REL_COORDS: list[Tile] = set()
+for _i, _pt in enumerate(_PRP_WITH_REL_COORD):
+    if _pt: 
+        _PRP_REL_COORDS.add(_i)
+for _i, _pt in enumerate(_PRP_WITH_ADJ_REL_COORD):
+    if _pt: 
+        _PRP_REL_COORDS.add(_i)
 _PRP_REL_COORDS = list(_PRP_REL_COORDS)
 
-_PRP_WITH_PC_ID: dict[int, _PrpSet] = defaultdict(_PrpSet)
+_PRP_WITH_PC_ID: list[_PrpSet] = [0] * N_PIECES
 for _pt in _PIECE_ROTATION_POINTS: 
     _PRP_WITH_PC_ID[_pt.piece_id] |= _pt.as_set
 
@@ -522,10 +530,12 @@ class _Player:
         self.id = id
         self._prps = _PRP_SET_ALL
         self.board = board 
+        self._tiles = board._tiles
         self.corners: dict[Tile, _PrpSet] = {}
         self.has_played = False 
         self.score = 0
         self._state: list[_PlayerState] = []
+        self._tgt = id + 1
 
         # add the 4 initial corners of the board at game start
         # since each player's first move has this rule exception
@@ -567,14 +577,14 @@ class _Player:
 
     def remove_piece(self, piece_id: int) -> None: 
         # remove piece permutations from availability list 
-        prps = _PRP_WITH_PC_ID[piece_id]
-        self._prps &= ~prps
+        not_prps = ~_PRP_WITH_PC_ID[piece_id]
+        self._prps &= not_prps
 
         remove = [] 
 
         # remove piece permutations from all open corners 
         for key, corner in self.corners.items(): 
-            corner &= ~prps 
+            corner &= not_prps
             if corner == 0: 
                 remove.append(key)
             else: 
@@ -599,7 +609,7 @@ class _Player:
             invalid: _PrpSet = 0
             for tile in tiles: 
                 c = TILE_COORDS[tile] 
-                rel = (c[0] - cy, c[1] - cx) 
+                rel = create_rel_tile((c[0] - cy, c[1] - cx))
                 invalid |= _PRP_WITH_REL_COORD[rel]
             prps &= ~invalid 
             if prps == 0: 
@@ -614,21 +624,34 @@ class _Player:
         if tile in self.corners:
             return
 
-        bad: _PrpSet = 0
+        bad: _PrpSet = ~_PRP_SET_ALL
 
+        tgt = self._tgt
         y, x = tile_to_coords(tile) 
+
         for rel in _PRP_REL_COORDS: 
-            pt = (rel[0] + y, rel[1] + x)
-            t = coords_to_tile(pt) 
-            oob = out_of_bounds(pt)
-            if oob or self.board._tiles[t] != 0:
+            pt = _REL_TILE_COORDS[rel]
+            pt = (pt[0] + y, pt[1] + x)
+            # pt = (rel[0] + y, rel[1] + x)
+            t = pt[0] * 20 + pt[1] 
+            ib = in_bounds(pt)
+
+            if ib: 
+                if col := self._tiles[t]: 
+                    bad |= _PRP_WITH_REL_COORD[rel]
+                    if not (col - tgt): 
+                        bad |= _PRP_WITH_ADJ_REL_COORD[rel]
+            else: 
                 bad |= _PRP_WITH_REL_COORD[rel]
-            if not oob and self.board._tiles[t] == self.id + 1:
-                bad |= _PRP_WITH_ADJ_REL_COORD[rel]
+
+            # if not ib or self.board._tiles[t]:
+            #     bad |= _PRP_WITH_REL_COORD[rel]
+            # if ib and not (self.board._tiles[t] - tgt):
+            #     bad |= _PRP_WITH_ADJ_REL_COORD[rel]
 
         prps = self._prps & ~bad
         if prps > 0:
-            self.corners[tile] = self._prps & ~bad
+            self.corners[tile] = prps
 
 class Move:
     """
