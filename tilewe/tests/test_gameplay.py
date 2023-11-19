@@ -63,22 +63,27 @@ class TestGameplay(unittest.TestCase):
         self.assertEqual(board.winners, [2], enexpected_game_msg)
 
     def test_open_corners_first_moves(self):
-        random.seed(0)
-        board = tilewe.Board(4) 
         engine = RandomEngine()
-        while board.ply < 4:
-            # assert that player N has 4-N of the opening corners to choose from
-            self.assertEqual(board.n_player_corners(board.current_player), 4 - board.ply)
-            mv: tilewe.Move = engine.search(board)
-            board.push(mv)
         
-        self.log.debug("test_open_corners_first_moves\n" + str(board))
+        # test for games of all valid player counts
+        for n in [1, 2, 3, 4]:
+            random.seed(0)
+            board = tilewe.Board(n) 
+            while board.ply < board.n_players:
+                current_player = board.current_player
 
-        # assert that the four corners have been taken
-        self.assertNotEqual(board.color_at(tilewe.A01), tilewe.NO_COLOR)
-        self.assertNotEqual(board.color_at(tilewe.A20), tilewe.NO_COLOR)
-        self.assertNotEqual(board.color_at(tilewe.T01), tilewe.NO_COLOR)
-        self.assertNotEqual(board.color_at(tilewe.T20), tilewe.NO_COLOR)
+                # assert that player N has 4-N of the opening corners to choose from
+                self.assertEqual(board.n_player_corners(current_player), 4 - board.ply)
+                mv: tilewe.Move = engine.search(board)
+                board.push(mv)
+
+                # assert that the next player is (N + 1) % num players (when all players remain in the game)
+                self.assertEqual(board.current_player, (current_player + 1) % board.n_players)
+
+            # assert that a starting corner has been taken by each player's first move
+            start_corners = [tilewe.A01, tilewe.A20, tilewe.T01, tilewe.T20]
+            taken_start_corners = sum([1 for c in start_corners if board.color_at(c) != tilewe.NO_COLOR])
+            self.assertEqual(taken_start_corners, board.n_players)
 
 if __name__ == "__main__":
     # enables logging if file run directly instead of through pytest
