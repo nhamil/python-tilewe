@@ -842,7 +842,7 @@ class Board:
         player = self._players[player]
         prps = player.corners.get(tile, 0)
 
-        return prps & (1 << prp_id)
+        return (prps & (1 << prp_id)) != 0
 
     def is_legal(self, move: Move, for_player: Color=None) -> bool: 
         player = self._players[self.current_player if for_player is None else for_player]
@@ -872,7 +872,7 @@ class Board:
             return False 
 
         # permutation must fit at the corner square
-        return prps & prp.as_set
+        return (prps & prp.as_set) != 0
 
     def n_legal_moves(self, unique: bool=True, for_player: Color=None): 
         player = self._players[self.current_player if for_player is None else for_player]
