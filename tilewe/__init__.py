@@ -42,7 +42,7 @@ TILES = [
 ]
 
 TILE_COORDS = [
-    (y, x) for y in range(20) for x in range(20)
+    (x, y) for y in range(20) for x in range(20)
 ]
 
 TILE_NAMES = [
@@ -72,7 +72,7 @@ def tile_to_coords(tile: Tile) -> tuple[int, int]:
     return TILE_COORDS[tile]  
 
 def coords_to_tile(coords: tuple[int, int]) -> Tile: 
-    return coords[0] * 20 + coords[1] 
+    return coords[0] + coords[1] * 20 
 
 def tile_to_index(tile: Tile) -> int: 
     return tile
@@ -161,7 +161,7 @@ class _PieceRotation:
             for x in range(W): 
                 # check each tile in piece 
                 if shape[y, x] != 0: 
-                    self.rel_tiles.append((y, x))
+                    self.rel_tiles.append((x, y))
                     v_neighbors = 0
                     h_neighbors = 0
 
@@ -173,7 +173,7 @@ class _PieceRotation:
                     n_neighbors = v_neighbors + h_neighbors
 
                     if (n_neighbors <= 1) or (v_neighbors == 1 and h_neighbors == 1): 
-                        self.rel_contacts.append((y, x))
+                        self.rel_contacts.append((x, y))
                         self.contact_shape[y, x] = 1
 
         for coord in self.rel_contacts: 
@@ -210,25 +210,25 @@ class _PieceRotationPoint:
         self.contact = coords_to_tile(pt) 
         _PIECE_ROTATION_POINTS.append(self) 
 
-        dy, dx = pt
+        dx, dy = pt
         
         # coords relative to the contact
         self.rel_tiles: list[tuple[int, int]] = []
         self.rel_adjacent: set[tuple[int, int]] = set()
         self.rel_corners: set[tuple[int, int]] = set()
 
-        for y, x in rot.rel_tiles: 
-            self.rel_tiles.append((y - dy, x - dx))
+        for x, y in rot.rel_tiles: 
+            self.rel_tiles.append((x - dx, y - dy))
 
-        for y, x in self.rel_tiles: 
+        for x, y in self.rel_tiles: 
             for cy, cx in [(-1, 0), (1, 0), (0, -1), (0, 1)]: 
-                rel = (y + cy, x + cx)
+                rel = (x + cx, y + cy)
                 if rel not in self.rel_tiles: 
                     self.rel_adjacent.add(rel) 
 
-        for y, x in self.rel_tiles: 
-            for cy, cx in [(-1, -1), (1, -1), (-1, 1), (1, 1)]: 
-                rel = (y + cy, x + cx)
+        for x, y in self.rel_tiles: 
+            for cx, cy in [(-1, -1), (1, -1), (-1, 1), (1, 1)]: 
+                rel = (x + cx, y + cy)
                 if rel not in self.rel_tiles and rel not in self.rel_adjacent: 
                     self.rel_corners.add(rel) 
             
@@ -429,10 +429,10 @@ Z5 = _create_piece("Z5", [
 ])
 
 def create_rel_tile(pt: tuple[int, int]) -> Tile: 
-    return ((pt[0] + 32) << 6) + pt[1] + 32
+    return pt[0] + 32 + ((pt[1] + 32) << 6)
 
 _REL_TILE_COORDS = [
-    (y - 32, x - 32) for y in range(64) for x in range(64)
+    (x - 32, y - 32) for y in range(64) for x in range(64)
 ]
 
 # compute relative coordinates for the pieces
@@ -550,10 +550,12 @@ class _Player:
         out.id = self.id 
         out._prps = self._prps 
         out.board = board 
+        out._tiles = board._tiles
         out.corners = dict(self.corners)
         out.has_played = self.has_played 
         out.score = self.score
         out._state = [] 
+        out._tgt = self._tgt
 
         return out 
 
@@ -627,12 +629,12 @@ class _Player:
         bad: _PrpSet = ~_PRP_SET_ALL
 
         tgt = self._tgt
-        y, x = tile_to_coords(tile) 
+        x, y = tile_to_coords(tile) 
 
         for rel in _PRP_REL_COORDS: 
             pt = _REL_TILE_COORDS[rel]
-            pt = (pt[0] + y, pt[1] + x)
-            t = pt[0] * 20 + pt[1] 
+            pt = (pt[0] + x, pt[1] + y)
+            t = pt[0] + pt[1] * 20 
             ib = in_bounds(pt)
 
             if ib: 
@@ -992,10 +994,10 @@ class Board:
             p.push_state() 
 
         # absolute position of tiles 
-        ty, tx = TILE_COORDS[tile] 
-        tiles = [coords_to_tile((t[0] + ty, t[1] + tx)) for t in prp.rel_tiles]
-        corners = [(t[0] + ty, t[1] + tx) for t in prp.rel_corners]
-        adj = [(t[0] + ty, t[1] + tx) for t in prp.rel_adjacent]
+        tx, ty = TILE_COORDS[tile] 
+        tiles = [coords_to_tile((t[0] + tx, t[1] + ty)) for t in prp.rel_tiles]
+        corners = [(t[0] + tx, t[1] + ty) for t in prp.rel_corners]
+        adj = [(t[0] + tx, t[1] + ty) for t in prp.rel_adjacent]
 
         corners = [coords_to_tile(c) for c in corners if in_bounds(c)]
         adj = [coords_to_tile(c) for c in adj if in_bounds(c)]
