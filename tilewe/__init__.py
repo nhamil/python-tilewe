@@ -810,7 +810,7 @@ class Board:
         pieces = set() 
         prps = self._players[player]._prps 
 
-        while prps != 0: 
+        while prps: 
             # get least significant bit
             prp = (prps & -prps).bit_length() - 1
             # remove it so the next LSB is another PRP
@@ -877,7 +877,7 @@ class Board:
                 total += prps.bit_count() 
         else: 
             for prps in player.corners.values(): 
-                while prps != 0: 
+                while prps: 
                     # get least significant bit
                     prp_id = (prps & -prps).bit_length() - 1
                     # remove it so the next LSB is another PRP
@@ -897,7 +897,7 @@ class Board:
         # duplicate for loop so that we don't check the if statement for every permutation
         if unique: 
             for to_sq, prps in player.corners.items(): 
-                while prps != 0: 
+                while prps: 
                     # get least significant bit
                     prp_id = (prps & -prps).bit_length() - 1
                     # remove it so the next LSB is another PRP
@@ -913,7 +913,7 @@ class Board:
                     ))
         else: 
             for to_sq, prps in player.corners.items(): 
-                while prps != 0: 
+                while prps: 
                     # get least significant bit
                     prp_id = (prps & -prps).bit_length() - 1
                     # remove it so the next LSB is another PRP
