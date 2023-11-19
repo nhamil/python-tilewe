@@ -37,7 +37,7 @@ class TestGameplay(unittest.TestCase):
         board = tilewe.Board(4) 
         engine = RandomEngine()
 
-        # play a game until it's state is marked finished
+        # play a game until the state is marked finished
         tracked_ply = 0
         while not board.finished:
             board.push(engine.search(board))
