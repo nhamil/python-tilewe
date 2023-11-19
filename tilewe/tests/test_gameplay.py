@@ -13,9 +13,15 @@ class TestGameplay(unittest.TestCase):
     def test_no_moves_is_finished(self):
         random.seed(0)
         board = tilewe.Board(4) 
+
+        # play a game until no legal moves are generated
+        tracked_ply = 0
         while (moves := board.generate_legal_moves(unique=True)):
-            mv: tilewe.Move = random.choice(moves)
-            board.push(mv)
+            board.push(random.choice(moves))
+
+            # assert that the game finishes before 84 moves (i.e. no infinite loop)
+            tracked_ply += 1
+            self.assertLessEqual(tracked_ply, 84)
         
         self.log.debug("test_no_moves_is_finished\n" + str(board))
 
@@ -30,9 +36,15 @@ class TestGameplay(unittest.TestCase):
         random.seed(0)
         board = tilewe.Board(4) 
         engine = RandomEngine()
+
+        # play a game until it's state is marked finished
+        tracked_ply = 0
         while not board.finished:
-            mv: tilewe.Move = engine.search(board)
-            board.push(mv)
+            board.push(engine.search(board))
+
+            # assert that the game finishes before 84 moves (i.e. no infinite loop)
+            tracked_ply += 1
+            self.assertLessEqual(tracked_ply, 84)
         
         self.log.debug("test_finished_game_state\n" + str(board))
 
@@ -75,14 +87,18 @@ class TestGameplay(unittest.TestCase):
             board = tilewe.Board(n) 
             while board.ply < board.n_players:
                 current_player = board.current_player
+                current_ply = board.ply
 
                 # assert that player N has 4-N of the opening corners to choose from
                 self.assertEqual(board.n_player_corners(current_player), 4 - board.ply)
-                mv: tilewe.Move = engine.search(board)
-                board.push(mv)
+
+                board.push(engine.search(board))
 
                 # assert that the next player is (N + 1) % num players (when all players remain in the game)
                 self.assertEqual(board.current_player, (current_player + 1) % board.n_players)
+
+                # assert that ply increases with the move
+                self.assertEqual(board.ply, current_ply + 1)
 
             # assert that a starting corner has been taken by each player's first move
             start_corners = [tilewe.A01, tilewe.A20, tilewe.T01, tilewe.T20]
