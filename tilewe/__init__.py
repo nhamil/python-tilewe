@@ -632,7 +632,6 @@ class _Player:
         for rel in _PRP_REL_COORDS: 
             pt = _REL_TILE_COORDS[rel]
             pt = (pt[0] + y, pt[1] + x)
-            # pt = (rel[0] + y, rel[1] + x)
             t = pt[0] * 20 + pt[1] 
             ib = in_bounds(pt)
 
@@ -644,13 +643,8 @@ class _Player:
             else: 
                 bad |= _PRP_WITH_REL_COORD[rel]
 
-            # if not ib or self.board._tiles[t]:
-            #     bad |= _PRP_WITH_REL_COORD[rel]
-            # if ib and not (self.board._tiles[t] - tgt):
-            #     bad |= _PRP_WITH_ADJ_REL_COORD[rel]
-
         prps = self._prps & ~bad
-        if prps > 0:
+        if prps:
             self.corners[tile] = prps
 
 class Move:
