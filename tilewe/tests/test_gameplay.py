@@ -38,8 +38,12 @@ class TestGameplay(unittest.TestCase):
 
         for i in range(board.n_players):
             # assert that when the game is marked finished, no moves can be played
+            self.assertEqual(board.n_legal_moves(unique=True, for_player=i), 0)
             self.assertEqual(board.generate_legal_moves(unique=True, for_player=i), [])
+
+            self.assertEqual(board.n_legal_moves(unique=False, for_player=i), 0)
             self.assertEqual(board.generate_legal_moves(unique=False, for_player=i), [])
+
             self.assertFalse(board.can_play(player=i))
 
             # assert that when there are no moves, players have 0 open corners
