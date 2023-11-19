@@ -58,9 +58,9 @@ class TestGameplay(unittest.TestCase):
         all_moves = [str(move) for move in board.moves]
 
         # assert that the expected game was played
-        enexpected_game_msg = "Expected game not played, was generate_legal_moves() changed intentionally?"
-        self.assertEqual(all_moves, expected_game, enexpected_game_msg)
-        self.assertEqual(board.winners, [2], enexpected_game_msg)
+        unexpected_game_msg = "Expected game not played, was generate_legal_moves() changed intentionally?"
+        self.assertEqual(all_moves, expected_game, unexpected_game_msg)
+        self.assertEqual(board.winners, [2], unexpected_game_msg)
 
     def test_open_corners_first_moves(self):
         engine = RandomEngine()
