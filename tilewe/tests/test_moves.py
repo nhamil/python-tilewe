@@ -2,7 +2,7 @@ import unittest
 
 import tilewe
 
-class TestTilewe(unittest.TestCase): 
+class TestMoves(unittest.TestCase): 
     
     def test_unique_legal_move(self): 
         board = tilewe.Board(4) 
@@ -215,6 +215,22 @@ class TestTilewe(unittest.TestCase):
         self.assertEqual(board.current_player, tilewe.YELLOW)
         board.pop_null() 
         self.assertEqual(board.current_player, tilewe.BLUE)
+
+    def test_legal_move_gen_full_game(self):
+        board = tilewe.Board(4) 
+
+        while not board.finished: 
+            # assert that all generated unique moves are legal for every ply
+            unique_moves = board.generate_legal_moves(unique=True)
+            for mv in unique_moves:
+                self.assertTrue(board.is_legal(mv))
+
+            # assert that all generated non-unique moves are legal for every ply
+            non_unique_moves = board.generate_legal_moves(unique=False)
+            for mv in non_unique_moves:
+                self.assertTrue(board.is_legal(mv))
+
+            board.push(unique_moves[0])
 
 if __name__ == '__main__': 
     unittest.main() 

@@ -3,7 +3,7 @@ import unittest
 import tilewe
 import tilewe.elo
 
-class TestTilewe(unittest.TestCase): 
+class TestElo(unittest.TestCase): 
     
     def test_elo_win_rate(self): 
         C = 400
@@ -58,3 +58,6 @@ class TestTilewe(unittest.TestCase):
 
         # draw against 1000 stronger opponent gives roughly +K/2 Elo
         self.assertAlmostEqual(tilewe.elo.compute_elo_adjustment_2(1500, 2500, 0.5, K), 15.8991, 4)
+
+if __name__ == '__main__': 
+    unittest.main() 

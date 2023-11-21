@@ -21,7 +21,7 @@ class Engine:
     def out_of_time(self) -> bool: 
         return time.time() >= self.end_at 
 
-    def search(self, board: tilewe.Board, seconds: float) -> tilewe.Move: 
+    def search(self, board: tilewe.Board, seconds: float=1.0) -> tilewe.Move: 
         self.end_at = time.time() + seconds 
         self.seconds = seconds 
         return self.on_search(board, seconds) 
