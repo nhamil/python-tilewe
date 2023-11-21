@@ -841,7 +841,7 @@ class Board:
         # permutation must fit at the corner square
         return (prps & prp.as_set) != 0
 
-    def n_legal_moves(self, unique: bool=True, for_player: Color=None): 
+    def n_legal_moves(self, unique: bool=True, for_player: Color=None) -> int: 
         player = self._players[self.current_player if for_player is None else for_player]
         total = 0 
 
@@ -863,7 +863,7 @@ class Board:
 
         return total 
 
-    def generate_legal_moves(self, unique: bool=True, for_player: Color=None): 
+    def generate_legal_moves(self, unique: bool=True, for_player: Color=None) -> list[Move]: 
         moves: list[Move] = [] 
         player = self._players[self.current_player if for_player is None else for_player]
 
