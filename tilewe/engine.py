@@ -241,7 +241,7 @@ class TileWeightEngine(Engine):
             to_coords = tilewe.tile_to_coords(move.to_tile) 
             for coords in tilewe.piece_tile_coords(move.piece, move.rotation, move.contact): 
                 coords = (coords[0] + to_coords[0], coords[1] + to_coords[1])
-                total += self.weights[coords[1] * 20 + coords[0]]
+                total += self.weights[tilewe.coords_to_tile(coords)]
 
             return total
 

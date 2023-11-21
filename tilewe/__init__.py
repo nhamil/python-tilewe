@@ -1,4 +1,3 @@
-from collections import defaultdict
 from dataclasses import dataclass
 import sys
 
@@ -9,10 +8,8 @@ if sys.version_info[0] != 3 or sys.version_info[1] < 10:
 
 print_color = True 
 
-# type wrappers to make use of primitives more clear
-Tile = tuple[int, int] 
-
 # internally int, so copies value not reference 
+Tile = int
 Piece = int 
 Rotation = int 
 Color = int
@@ -41,7 +38,11 @@ TILES = [
     A19, B19, C19, D19, E19, F19, G19, H19, I19, J19, K19, L19, M19, N19, O19, P19, Q19, R19, S19, T19, 
     A20, B20, C20, D20, E20, F20, G20, H20, I20, J20, K20, L20, M20, N20, O20, P20, Q20, R20, S20, T20
 ] = [
-    Tile((y, x)) for y in range(20) for x in range(20)
+    Tile(i) for i in range(20 * 20)
+]
+
+TILE_COORDS = [
+    (x, y) for y in range(20) for x in range(20)
 ]
 
 TILE_NAMES = [
@@ -66,6 +67,21 @@ TILE_NAMES = [
     "a19", "b19", "c19", "d19", "e19", "f19", "g19", "h19", "i19", "j19", "k19", "l19", "m19", "n19", "o19", "p19", "q19", "r19", "s19", "t19",  # noqa: 501
     "a20", "b20", "c20", "d20", "e20", "f20", "g20", "h20", "i20", "j20", "k20", "l20", "m20", "n20", "o20", "p20", "q20", "r20", "s20", "t20"   # noqa: 501
 ]
+
+def tile_to_coords(tile: Tile) -> tuple[int, int]: 
+    return TILE_COORDS[tile]  
+
+def coords_to_tile(coords: tuple[int, int]) -> Tile: 
+    return coords[0] + coords[1] * 20 
+
+def tile_to_index(tile: Tile) -> int: 
+    return tile
+
+def out_of_bounds(coords: tuple[int, int]) -> int:
+    return not (0 <= coords[0] < 20 and 0 <= coords[1] < 20)
+
+def in_bounds(coords: tuple[int, int]) -> bool:
+    return 0 <= coords[0] < 20 and 0 <= coords[1] < 20
 
 ROTATIONS = [
     NORTH, EAST, SOUTH, WEST, NORTH_F, EAST_F, SOUTH_F, WEST_F
@@ -132,8 +148,10 @@ class _PieceRotation:
         self.name = name 
         self.shape = np.array(shape, dtype=np.uint8) 
 
-        self.tiles: list[Tile] = []
-        self.contacts: list[Tile] = []
+        # coords relative to a1 of the rotated piece (regardless of if that's a valid contact)
+        self.rel_tiles: list[tuple[int, int]] = []
+        self.rel_contacts: list[tuple[int, int]] = []
+
         self.prps: dict[Tile, _PieceRotationPoint] = {}
         self.n_corners = 0
 
@@ -143,7 +161,7 @@ class _PieceRotation:
             for x in range(W): 
                 # check each tile in piece 
                 if shape[y, x] != 0: 
-                    self.tiles.append((y, x))
+                    self.rel_tiles.append((x, y))
                     v_neighbors = 0
                     h_neighbors = 0
 
@@ -155,13 +173,15 @@ class _PieceRotation:
                     n_neighbors = v_neighbors + h_neighbors
 
                     if (n_neighbors <= 1) or (v_neighbors == 1 and h_neighbors == 1): 
-                        self.contacts.append((y, x))
+                        self.rel_contacts.append((x, y))
                         self.contact_shape[y, x] = 1
 
-        for coord in self.contacts: 
-            self.prps[coord] = _PieceRotationPoint(name, self, coord) 
+        for coord in self.rel_contacts: 
+            self.prps[coords_to_tile(coord)] = _PieceRotationPoint(name, self, coord) 
         
-        self.n_corners = len(list(self.prps.values())[0].corners)
+        self.n_corners = len(list(self.prps.values())[0].rel_corners)
+        self.tiles = [coords_to_tile(t) for t in self.rel_tiles]
+        self.contacts = [coords_to_tile(t) for t in self.rel_contacts]
 
 class _PieceRotationPoint: 
     """
@@ -178,7 +198,7 @@ class _PieceRotationPoint:
         Which contact of the piece is used by this piece-rotation-point
     """
 
-    def __init__(self, name: str, rot: _PieceRotation, pt: Tile): 
+    def __init__(self, name: str, rot: _PieceRotation, pt: tuple[int, int]): 
         self.id = len(_PIECE_ROTATION_POINTS)
         self.as_set = 1 << self.id 
         global _PRP_SET_ALL
@@ -187,36 +207,37 @@ class _PieceRotationPoint:
         self.rotation = rot 
         self.piece_id = self.piece.id 
         self.name = name 
-        self.contact = pt 
+        self.contact = coords_to_tile(pt) 
         _PIECE_ROTATION_POINTS.append(self) 
 
-        dy, dx = pt 
+        dx, dy = pt
         
-        self.tiles: list[Tile] = []
-        self.adjacent: set[Tile] = set()
-        self.corners: set[Tile] = set()
+        # coords relative to the contact
+        self.rel_tiles: list[tuple[int, int]] = []
+        self.rel_adjacent: set[tuple[int, int]] = set()
+        self.rel_corners: set[tuple[int, int]] = set()
 
-        for y, x in rot.tiles: 
-            self.tiles.append((y - dy, x - dx))
+        for x, y in rot.rel_tiles: 
+            self.rel_tiles.append((x - dx, y - dy))
 
-        for y, x in self.tiles: 
+        for x, y in self.rel_tiles: 
             for cy, cx in [(-1, 0), (1, 0), (0, -1), (0, 1)]: 
-                rel = (y + cy, x + cx)
-                if rel not in self.tiles: 
-                    self.adjacent.add(rel) 
+                rel = (x + cx, y + cy)
+                if rel not in self.rel_tiles: 
+                    self.rel_adjacent.add(rel) 
 
-        for y, x in self.tiles: 
-            for cy, cx in [(-1, -1), (1, -1), (-1, 1), (1, 1)]: 
-                rel = (y + cy, x + cx)
-                if rel not in self.tiles and rel not in self.adjacent: 
-                    self.corners.add(rel) 
+        for x, y in self.rel_tiles: 
+            for cx, cy in [(-1, -1), (1, -1), (-1, 1), (1, 1)]: 
+                rel = (x + cx, y + cy)
+                if rel not in self.rel_tiles and rel not in self.rel_adjacent: 
+                    self.rel_corners.add(rel) 
             
-        self.adjacent = sorted(list(self.adjacent))
-        self.corners = sorted(list(self.corners))
+        self.rel_adjacent = sorted(list(self.rel_adjacent))
+        self.rel_corners = sorted(list(self.rel_corners))
 
 # internal global data for all game pieces
 # initialized on library load one time below
-PIECE_COUNT = 0
+N_PIECES = 0
 _PIECES: list[_Piece] = []
 _PIECE_ROTATIONS: list[_PieceRotation] = []
 _PIECE_ROTATION_POINTS: list[_PieceRotationPoint] = []
@@ -240,9 +261,9 @@ def _create_piece(name: str, shape: list[list[int]]) -> Piece:
         The new id assigned to this piece
     """
 
-    global PIECE_COUNT 
-    id = PIECE_COUNT 
-    PIECE_COUNT += 1 
+    global N_PIECES 
+    id = N_PIECES 
+    N_PIECES += 1 
     pc = _Piece(name, id) 
     _PIECES.append(pc) 
     f_names = []
@@ -407,60 +428,55 @@ Z5 = _create_piece("Z5", [
     [0, 1, 1]
 ])
 
+def create_rel_tile(pt: tuple[int, int]) -> Tile: 
+    return pt[0] + 32 + ((pt[1] + 32) << 6)
+
+_REL_TILE_COORDS = [
+    (x - 32, y - 32) for y in range(64) for x in range(64)
+]
+
 # compute relative coordinates for the pieces
-_PRP_WITH_REL_COORD: dict[Tile, _PrpSet] = defaultdict(_PrpSet)
+_PRP_WITH_REL_COORD: list[_PrpSet] = [0] * (64 * 64)
 for _pt in _PIECE_ROTATION_POINTS: 
-    for _tile in _pt.tiles: 
-        _PRP_WITH_REL_COORD[_tile] |= _pt.as_set
+    for _tile in _pt.rel_tiles: 
+        _PRP_WITH_REL_COORD[create_rel_tile(_tile)] |= _pt.as_set
 
-_PRP_WITH_ADJ_REL_COORD: dict[Tile, _PrpSet] = defaultdict(_PrpSet)
+_PRP_WITH_ADJ_REL_COORD: list[_PrpSet] = [0] * (64 * 64)
 for _pt in _PIECE_ROTATION_POINTS: 
-    for _tile in _pt.adjacent: 
-        _PRP_WITH_ADJ_REL_COORD[_tile] |= _pt.as_set
+    for _tile in _pt.rel_adjacent: 
+        _PRP_WITH_ADJ_REL_COORD[create_rel_tile(_tile)] |= _pt.as_set
 
-_PRP_REL_COORDS: set[Tile] = set()
-for _pt in _PRP_WITH_REL_COORD:
-    _PRP_REL_COORDS.add(_pt)
-for _pt in _PRP_WITH_ADJ_REL_COORD:
-    _PRP_REL_COORDS.add(_pt)
+_PRP_REL_COORDS: list[Tile] = set()
+for _i, _pt in enumerate(_PRP_WITH_REL_COORD):
+    if _pt: 
+        _PRP_REL_COORDS.add(_i)
+for _i, _pt in enumerate(_PRP_WITH_ADJ_REL_COORD):
+    if _pt: 
+        _PRP_REL_COORDS.add(_i)
 _PRP_REL_COORDS = list(_PRP_REL_COORDS)
 
-_PRP_WITH_PC_ID: dict[int, _PrpSet] = defaultdict(_PrpSet)
+_PRP_WITH_PC_ID: list[_PrpSet] = [0] * N_PIECES
 for _pt in _PIECE_ROTATION_POINTS: 
     _PRP_WITH_PC_ID[_pt.piece_id] |= _pt.as_set
 
-def tile_to_coords(tile: Tile) -> tuple[int, int]: 
-    return tile 
-
-def coords_to_tile(coords: tuple[int, int]) -> Tile: 
-    return coords 
-
-def tile_to_index(tile: Tile) -> int: 
-    # y * width + x
-    return tile[0] * 20 + tile[1]
-
-def out_of_bounds(tile: Tile) -> bool:
-    return not (0 <= tile[0] < 20 and 0 <= tile[1] < 20)
-
 # helpers for retrieving information about game pieces
 def n_piece_contacts(piece: Piece) -> int: 
-    return len(_PIECES[piece].rotations[0].contacts)
+    return len(_PIECES[piece].rotations[0].rel_contacts)
 
 def n_piece_tiles(piece: Piece) -> int: 
-    return len(_PIECES[piece].rotations[0].tiles)
+    return len(_PIECES[piece].rotations[0].rel_tiles)
 
 def n_piece_corners(piece: Piece) -> int: 
     return _PIECES[piece].rotations[0].n_corners
 
-def piece_tiles(piece: Piece, rotation: Rotation, contact: Tile=None) -> list[Tile]: 
-    """WARNING: The output of this function may change in the future"""
-    if contact is None: 
-        return list(_PIECES[piece].rotations[rotation].tiles)
-    else: 
-        return list(_PIECES[piece].rotations[rotation].prps[contact].tiles)
+def piece_tiles(piece: Piece, rotation: Rotation) -> list[Tile]: 
+    return list(_PIECES[piece].rotations[rotation].tiles)
 
 def piece_tile_coords(piece: Piece, rotation: Rotation, contact: Tile=None) -> list[tuple[int, int]]: 
-    return piece_tiles(piece, rotation, contact)
+    if contact is None: 
+        return list(_PIECES[piece].rotations[rotation].rel_tiles)
+    else: 
+        return list(_PIECES[piece].rotations[rotation].prps[contact].rel_tiles)
 
 @dataclass
 class _PlayerState: 
@@ -514,10 +530,12 @@ class _Player:
         self.id = id
         self._prps = _PRP_SET_ALL
         self.board = board 
+        self._tiles = board._tiles
         self.corners: dict[Tile, _PrpSet] = {}
         self.has_played = False 
         self.score = 0
         self._state: list[_PlayerState] = []
+        self._tgt = id + 1
 
         # add the 4 initial corners of the board at game start
         # since each player's first move has this rule exception
@@ -532,10 +550,12 @@ class _Player:
         out.id = self.id 
         out._prps = self._prps 
         out.board = board 
+        out._tiles = board._tiles
         out.corners = dict(self.corners)
         out.has_played = self.has_played 
         out.score = self.score
         out._state = [] 
+        out._tgt = self._tgt
 
         return out 
 
@@ -559,14 +579,14 @@ class _Player:
 
     def remove_piece(self, piece_id: int) -> None: 
         # remove piece permutations from availability list 
-        prps = _PRP_WITH_PC_ID[piece_id]
-        self._prps &= ~prps
+        not_prps = ~_PRP_WITH_PC_ID[piece_id]
+        self._prps &= not_prps
 
         remove = [] 
 
         # remove piece permutations from all open corners 
         for key, corner in self.corners.items(): 
-            corner &= ~prps 
+            corner &= not_prps
             if corner == 0: 
                 remove.append(key)
             else: 
@@ -587,9 +607,11 @@ class _Player:
         #     find all piece permutations that need one of the filled tiles
         #     and remove them from possible moves 
         for corner, prps in self.corners.items(): 
+            cy, cx = tile_to_coords(corner) 
             invalid: _PrpSet = 0
             for tile in tiles: 
-                rel = (tile[0] - corner[0], tile[1] - corner[1]) 
+                c = TILE_COORDS[tile] 
+                rel = create_rel_tile((c[0] - cy, c[1] - cx))
                 invalid |= _PRP_WITH_REL_COORD[rel]
             prps &= ~invalid 
             if prps == 0: 
@@ -601,22 +623,31 @@ class _Player:
             del self.corners[r]
 
     def add_corner(self, tile: Tile) -> None:
-        if tile in self.corners or out_of_bounds(tile):
+        if tile in self.corners:
             return
 
-        bad: _PrpSet = 0
+        bad: _PrpSet = ~_PRP_SET_ALL
+
+        tgt = self._tgt
+        x, y = tile_to_coords(tile) 
 
         for rel in _PRP_REL_COORDS: 
-            pt = (rel[0] + tile[0], rel[1] + tile[1])
-            oob = out_of_bounds(pt)
-            if oob or self.board._tiles[pt] != 0:
+            pt = _REL_TILE_COORDS[rel]
+            pt = (pt[0] + x, pt[1] + y)
+            t = pt[0] + pt[1] * 20 
+            ib = in_bounds(pt)
+
+            if ib: 
+                if col := self._tiles[t]: 
+                    bad |= _PRP_WITH_REL_COORD[rel]
+                    if not (col - tgt): 
+                        bad |= _PRP_WITH_ADJ_REL_COORD[rel]
+            else: 
                 bad |= _PRP_WITH_REL_COORD[rel]
-            if not oob and self.board._tiles[pt] == self.id + 1:
-                bad |= _PRP_WITH_ADJ_REL_COORD[rel]
 
         prps = self._prps & ~bad
-        if prps > 0:
-            self.corners[tile] = self._prps & ~bad
+        if prps:
+            self.corners[tile] = prps
 
 class Move:
     """
@@ -644,17 +675,15 @@ class Move:
         return _PIECES[self.piece].name + \
             ROTATION_NAMES[self.rotation] + \
             "-" + \
-            TILE_NAMES[TILES.index(self.contact)] + \
-            TILE_NAMES[TILES.index(self.to_tile)]
+            TILE_NAMES[self.contact] + \
+            TILE_NAMES[self.to_tile]
     
     def __hash__(self):
         # adds support for using Move objects in sets
         return self.piece * 2659 + \
             self.rotation * 5393 + \
-            self.contact[0] * 571 + \
-            self.contact[1] * 683 + \
-            self.to_tile[0] * 1607 + \
-            self.to_tile[1] * 1741
+            self.contact * 571 + \
+            self.to_tile * 1607
     
     def is_equal(self, value: 'Move') -> bool: 
         return \
@@ -715,7 +744,7 @@ class Board:
             raise Exception("Number of players must be between 1 and 4") 
 
         self._state: list[_BoardState] = [] 
-        self._tiles = np.zeros((20, 20), dtype=np.uint8) 
+        self._tiles = np.zeros((400,), dtype=np.uint8)
         self._n_players = n_players 
         self._players: list[_Player] = []
 
@@ -783,7 +812,7 @@ class Board:
         pieces = set() 
         prps = self._players[player]._prps 
 
-        while prps != 0: 
+        while prps: 
             # get least significant bit
             prp = (prps & -prps).bit_length() - 1
             # remove it so the next LSB is another PRP
@@ -850,7 +879,7 @@ class Board:
                 total += prps.bit_count() 
         else: 
             for prps in player.corners.values(): 
-                while prps != 0: 
+                while prps: 
                     # get least significant bit
                     prp_id = (prps & -prps).bit_length() - 1
                     # remove it so the next LSB is another PRP
@@ -870,7 +899,7 @@ class Board:
         # duplicate for loop so that we don't check the if statement for every permutation
         if unique: 
             for to_sq, prps in player.corners.items(): 
-                while prps != 0: 
+                while prps: 
                     # get least significant bit
                     prp_id = (prps & -prps).bit_length() - 1
                     # remove it so the next LSB is another PRP
@@ -886,7 +915,7 @@ class Board:
                     ))
         else: 
             for to_sq, prps in player.corners.items(): 
-                while prps != 0: 
+                while prps: 
                     # get least significant bit
                     prp_id = (prps & -prps).bit_length() - 1
                     # remove it so the next LSB is another PRP
@@ -965,9 +994,13 @@ class Board:
             p.push_state() 
 
         # absolute position of tiles 
-        tiles = [(t[0] + tile[0], t[1] + tile[1]) for t in prp.tiles]
-        corners = [(t[0] + tile[0], t[1] + tile[1]) for t in prp.corners]
-        adj = [(t[0] + tile[0], t[1] + tile[1]) for t in prp.adjacent]
+        tx, ty = TILE_COORDS[tile] 
+        tiles = [coords_to_tile((t[0] + tx, t[1] + ty)) for t in prp.rel_tiles]
+        corners = [(t[0] + tx, t[1] + ty) for t in prp.rel_corners]
+        adj = [(t[0] + tx, t[1] + ty) for t in prp.rel_adjacent]
+
+        corners = [coords_to_tile(c) for c in corners if in_bounds(c)]
+        adj = [coords_to_tile(c) for c in adj if in_bounds(c)]
 
         for abs_tile in corners: 
             player.add_corner(abs_tile) 
@@ -989,7 +1022,7 @@ class Board:
             player.corners.pop(T20, None)
 
         player.has_played = True 
-        player.score += len(prp.tiles)
+        player.score += len(prp.rel_tiles)
 
         # inc turn and make sure player can move 
         cur_turn = self._incr_player() 
@@ -999,7 +1032,7 @@ class Board:
     def __str__(self): 
         out = "" 
         
-        board = self._tiles[::-1]
+        board = self._tiles.reshape((20, 20))[::-1]
 
         chars = None
         if print_color: 
