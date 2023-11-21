@@ -26,7 +26,7 @@ class Engine:
         self.seconds = seconds 
         return self.on_search(board, seconds) 
 
-    def on_search(self, board: tilewe.Board, seconds: float=1.0) -> tilewe.Move: 
+    def on_search(self, board: tilewe.Board, seconds: float) -> tilewe.Move: 
         raise NotImplementedError() 
 
 """
