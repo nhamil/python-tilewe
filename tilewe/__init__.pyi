@@ -65,3 +65,8 @@ class Board:
     def n_remaining_pieces(self, for_player: Color=None) -> int: 
         """Gets total number of pieces remaining for a player"""
         ...
+
+    def n_player_corners(self, for_player: Color=None) -> int: 
+        """Gets total number of open corners for a player"""
+        ...
+        
