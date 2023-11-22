@@ -61,3 +61,7 @@ class Board:
     def n_legal_moves(self, for_player: Color=None) -> int: 
         """Gets total number of legal moves for a player"""
         ...
+
+    def n_remaining_pieces(self, for_player: Color=None) -> int: 
+        """Gets total number of pieces remaining for a player"""
+        ...
