@@ -35,7 +35,7 @@ static int Board_init(BoardObject* self, PyObject* args, PyObject* kwds)
 
 static PyObject* Board_CurrentPlayer(BoardObject* self, void* closure) 
 {
-    return PyBool_FromLong(self->Board.CurTurn); 
+    return PyLong_FromLong(self->Board.CurTurn); 
 }
 
 static PyObject* Board_NumPlayers(BoardObject* self, void* closure) 
@@ -225,6 +225,55 @@ static PyObject* Board_NumPlayerPcs(BoardObject* self, PyObject* args, PyObject*
     return NULL; 
 }
 
+static PyObject* Board_PlayerOpenCorners(BoardObject* self, PyObject* args, PyObject* kwds) 
+{
+    static const char* kwlist[] = 
+    {
+        "for_player", 
+        NULL
+    };
+
+    int player = Tw_Color_None; 
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &player)) 
+    {
+        return NULL; 
+    }
+
+    if (player == Tw_Color_None) 
+    {
+        player = self->Board.CurTurn; 
+    }
+
+    if (player >= 0 && player < self->Board.NumPlayers) 
+    {
+        // count the open corners
+        Py_ssize_t openCorners = 0;
+        Tw_TileSet_FOR_EACH(self->Board.Players[player].OpenCorners.Keys, tile, 
+        {
+            openCorners++;
+        });
+
+        // build Python list of the open corner tiles
+        PyObject* list = PyList_New(openCorners); 
+        Py_ssize_t cornerIndex = 0;
+        Tw_TileSet_FOR_EACH(self->Board.Players[player].OpenCorners.Keys, tile, 
+        {
+            PyList_SetItem(
+                list, 
+                cornerIndex, 
+                PyLong_FromUnsignedLong((unsigned long) tile)
+            ); 
+            cornerIndex++;
+        });
+
+        return list; 
+    }
+
+    PyErr_SetString(PyExc_AttributeError, "for_player must be valid or None"); 
+    return NULL; 
+}
+
 static PyObject* Board_NumPlayerOpenCorners(BoardObject* self, PyObject* args, PyObject* kwds) 
 {
     static const char* kwlist[] = 
@@ -314,6 +363,7 @@ static PyMethodDef Board_methods[] =
     { "n_legal_moves", Board_NumLegalMoves, METH_VARARGS | METH_KEYWORDS, "Gets total number of legal moves for a player" }, 
     { "n_remaining_pieces", Board_NumPlayerPcs, METH_VARARGS | METH_KEYWORDS, "Gets total number of pieces remaining for a player" }, 
     { "n_player_corners", Board_NumPlayerOpenCorners, METH_VARARGS | METH_KEYWORDS, "Gets total number of open corners for a player" }, 
+    { "player_corners", Board_PlayerOpenCorners, METH_VARARGS | METH_KEYWORDS, "Gets a list of the open corners for a player" }, 
     // { "copy", Board_Copy, METH_NOARGS, "Returns a clone of the current board state" }, 
     { NULL }
 };
