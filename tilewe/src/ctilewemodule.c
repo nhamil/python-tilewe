@@ -167,7 +167,7 @@ static PyObject* Board_ColorAt(BoardObject* self, PyObject* args, PyObject* kwds
     return PyLong_FromUnsignedLong(Tw_Board_ColorAt(&self->Board, tile)); 
 }
 
-static PyObject* Board_NumLegalMoves(BoardObject* self, PyObject* args, PyObject* kwds) 
+static bool ForPlayerArgHandler(BoardObject* self, PyObject* args, PyObject* kwds, int* player) 
 {
     static const char* kwlist[] = 
     {
@@ -175,137 +175,97 @@ static PyObject* Board_NumLegalMoves(BoardObject* self, PyObject* args, PyObject
         NULL
     };
 
-    int player = Tw_Color_None; 
+    *player = Tw_Color_None; 
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &player)) 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, player)) 
     {
-        return NULL; 
+        *player = -1; 
+        return false;
     }
 
-    if (player == Tw_Color_None) 
+    if (*player == Tw_Color_None) 
     {
-        player = self->Board.CurTurn; 
+        *player = self->Board.CurTurn; 
     }
 
-    if (player >= 0 && player < self->Board.NumPlayers) 
+    if (*player < 0 || *player >= self->Board.NumPlayers) 
     {
-        return PyLong_FromLong(Tw_Board_NumMovesForPlayer(&self->Board, (Tw_Color) player)); 
+        *player = -1; 
+        PyErr_SetString(PyExc_AttributeError, "for_player must be valid or None"); 
+        return false;
     }
 
-    PyErr_SetString(PyExc_AttributeError, "for_player must be valid or None"); 
-    return NULL; 
+    return true;
+}
+
+static PyObject* Board_NumLegalMoves(BoardObject* self, PyObject* args, PyObject* kwds) 
+{
+    int player;
+    if (!ForPlayerArgHandler(self, args, kwds, &player))
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(Tw_Board_NumMovesForPlayer(&self->Board, (Tw_Color) player)); 
 }
 
 static PyObject* Board_NumPlayerPcs(BoardObject* self, PyObject* args, PyObject* kwds) 
 {
-    static const char* kwlist[] = 
+    int player;
+    if (!ForPlayerArgHandler(self, args, kwds, &player))
     {
-        "for_player", 
-        NULL
-    };
-
-    int player = Tw_Color_None; 
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &player)) 
-    {
-        return NULL; 
+        return NULL;
     }
 
-    if (player == Tw_Color_None) 
-    {
-        player = self->Board.CurTurn; 
-    }
-
-    if (player >= 0 && player < self->Board.NumPlayers) 
-    {
-        return PyLong_FromLong(Tw_Board_NumPlayerPcs(&self->Board, (Tw_Color) player)); 
-    }
-
-    PyErr_SetString(PyExc_AttributeError, "for_player must be valid or None"); 
-    return NULL; 
+    return PyLong_FromLong(Tw_Board_NumPlayerPcs(&self->Board, (Tw_Color) player)); 
 }
 
 static PyObject* Board_PlayerOpenCorners(BoardObject* self, PyObject* args, PyObject* kwds) 
 {
-    static const char* kwlist[] = 
+    int player;
+    if (!ForPlayerArgHandler(self, args, kwds, &player))
     {
-        "for_player", 
-        NULL
-    };
-
-    int player = Tw_Color_None; 
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &player)) 
-    {
-        return NULL; 
+        return NULL;
     }
 
-    if (player == Tw_Color_None) 
+    // count the open corners
+    Py_ssize_t openCorners = 0;
+    Tw_TileSet_FOR_EACH(self->Board.Players[player].OpenCorners.Keys, tile, 
     {
-        player = self->Board.CurTurn; 
-    }
+        openCorners++;
+    });
 
-    if (player >= 0 && player < self->Board.NumPlayers) 
+    // build Python list of the open corner tiles
+    PyObject* list = PyList_New(openCorners); 
+    Py_ssize_t cornerIndex = 0;
+    Tw_TileSet_FOR_EACH(self->Board.Players[player].OpenCorners.Keys, tile, 
     {
-        // count the open corners
-        Py_ssize_t openCorners = 0;
-        Tw_TileSet_FOR_EACH(self->Board.Players[player].OpenCorners.Keys, tile, 
-        {
-            openCorners++;
-        });
+        PyList_SetItem(
+            list, 
+            cornerIndex, 
+            PyLong_FromUnsignedLong((unsigned long) tile)
+        ); 
+        cornerIndex++;
+    });
 
-        // build Python list of the open corner tiles
-        PyObject* list = PyList_New(openCorners); 
-        Py_ssize_t cornerIndex = 0;
-        Tw_TileSet_FOR_EACH(self->Board.Players[player].OpenCorners.Keys, tile, 
-        {
-            PyList_SetItem(
-                list, 
-                cornerIndex, 
-                PyLong_FromUnsignedLong((unsigned long) tile)
-            ); 
-            cornerIndex++;
-        });
-
-        return list; 
-    }
-
-    PyErr_SetString(PyExc_AttributeError, "for_player must be valid or None"); 
-    return NULL; 
+    return list; 
 }
 
 static PyObject* Board_NumPlayerOpenCorners(BoardObject* self, PyObject* args, PyObject* kwds) 
 {
-    static const char* kwlist[] = 
+    int player;
+    if (!ForPlayerArgHandler(self, args, kwds, &player))
     {
-        "for_player", 
-        NULL
-    };
-
-    int player = Tw_Color_None; 
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &player)) 
-    {
-        return NULL; 
+        return NULL;
     }
 
-    if (player == Tw_Color_None) 
+    long openCorners = 0;
+    Tw_TileSet_FOR_EACH(self->Board.Players[player].OpenCorners.Keys, tile, 
     {
-        player = self->Board.CurTurn; 
-    }
+        openCorners++;
+    });
 
-    if (player >= 0 && player < self->Board.NumPlayers) 
-    {
-        long openCorners = 0;
-        Tw_TileSet_FOR_EACH(self->Board.Players[player].OpenCorners.Keys, tile, 
-        {
-            openCorners++;
-        });
-        return PyLong_FromLong(openCorners); 
-    }
-
-    PyErr_SetString(PyExc_AttributeError, "for_player must be valid or None"); 
-    return NULL; 
+    return PyLong_FromLong(openCorners); 
 }
 
 static PyObject* Board_Pop(BoardObject* self, PyObject* Py_UNUSED(ignored)) 
