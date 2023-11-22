@@ -69,7 +69,7 @@ class RandomEngine(Engine):
         super().__init__(name)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move: 
-        return random.choice(board.generate_legal_moves(unique=True)) 
+        return random.choice(board.generate_legal_moves()) 
 
 class MostOpenCornersEngine(Engine): 
     """
@@ -83,7 +83,7 @@ class MostOpenCornersEngine(Engine):
         super().__init__(name)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
-        moves = board.generate_legal_moves(unique=True) 
+        moves = board.generate_legal_moves() 
         random.shuffle(moves) 
         
         player = board.current_player
@@ -110,7 +110,7 @@ class LargestPieceEngine(Engine):
         super().__init__(name)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
-        moves = board.generate_legal_moves(unique=True) 
+        moves = board.generate_legal_moves() 
         random.shuffle(moves) 
 
         best = max(moves, key=lambda m:
@@ -135,7 +135,7 @@ class MaximizeMoveDifferenceEngine(Engine):
         super().__init__(name)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
-        moves = board.generate_legal_moves(unique=True) 
+        moves = board.generate_legal_moves() 
         random.shuffle(moves) 
         
         player = board.current_player
@@ -144,7 +144,7 @@ class MaximizeMoveDifferenceEngine(Engine):
             with MoveExecutor(board, m):
                 total = 0
                 for color in range(board.n_players): 
-                    n_moves = board.n_legal_moves(unique=True, for_player=color)
+                    n_moves = board.n_legal_moves(for_player=color)
                     total += n_moves * (1 if color == player else -1)
                 return total
 
@@ -245,7 +245,7 @@ class TileWeightEngine(Engine):
 
             return total
 
-        moves = board.generate_legal_moves(unique=True)
+        moves = board.generate_legal_moves()
         random.shuffle(moves)
 
         if board.ply < board.n_players:

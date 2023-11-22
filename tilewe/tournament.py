@@ -278,7 +278,10 @@ class Tournament:
 
         with multiprocessing.Pool(n_threads, initializer=init_func, initargs=init_args) as pool: 
             try:
-                for winners, scores, board, player_to_engine, time_sec in pool.imap_unordered(self._play_game, args): 
+                for winners, scores, moves, player_to_engine, time_sec in pool.imap_unordered(self._play_game, args): 
+                    board = tilewe.Board(len(player_to_engine))
+                    for move in moves: 
+                        board.push(move) 
                     if len(winners) > 0:  # at least one player always wins, if none then game crashed 
                         total_games += 1 
                         for p in player_to_engine:
@@ -380,7 +383,13 @@ class Tournament:
             engine_to_player = { value: key for key, value in enumerate(player_to_engine) }
             while not board.finished: 
                 engine = self.engines[player_to_engine[board.current_player]]
-                move = engine.search(board.copy_current_state(), self.move_seconds) 
+
+                b = tilewe.Board(n_players=len(player_to_engine))
+                for move in board.moves: 
+                    b.push(move) 
+
+                move = engine.search(b, self.move_seconds) 
+                # move = engine.search(board.copy_current_state(), self.move_seconds) 
                 # TODO test legality 
                 board.push(move) 
             end_time = time.time()
@@ -389,7 +398,7 @@ class Tournament:
             winners = [ player_to_engine[x] for x in board.winners ]
             scores = [ board.scores[engine_to_player[i]] if i in engine_to_player else 0 for i in range(len(self.engines)) ]
 
-            return winners, scores, board, player_to_engine, end_time - start_time
+            return winners, scores, board.moves, player_to_engine, end_time - start_time
         
         except BaseException: 
             traceback.print_exc()

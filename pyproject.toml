@@ -16,3 +16,8 @@ classifiers = [
 
 [project.urls]
 "Github" = "https://github.com/nhamil/python-tilewe"
+"C Implementation" = "https://github.com/nhamil/tilewe"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta" 
