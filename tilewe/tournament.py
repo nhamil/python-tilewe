@@ -5,6 +5,7 @@ import platform
 import random
 import signal
 import time
+import math
 
 import tilewe 
 from tilewe.engine import Engine
@@ -57,6 +58,8 @@ class TournamentResults:
         List of game count played by each engine
     win_counts : list[int]
         List of win count by each engine
+    draw_counts : list[int]
+        List of win count by each engine when there are 2 or more winners (i.e. draws)
     total_scores : list[int]
         List of total scores earned by each engine
     elo_start : list[float]
@@ -73,6 +76,7 @@ class TournamentResults:
     engine_names: list[str]
     game_counts: list[int]
     win_counts: list[int]
+    draw_counts: list[int]
     total_scores: list[int]
     elo_start: list[float]
     elo_end: list[float]
@@ -90,67 +94,77 @@ class TournamentResults:
     @property
     def win_rates(self) -> list[float]: 
         return [self.win_counts[i] / max(1, self.game_counts[i]) for i in range(self.total_engines)]
+
+    @property
+    def draw_rates(self) -> list[float]: 
+        return [self.draw_counts[i] / max(1, self.game_counts[i]) for i in range(self.total_engines)]
+
+    @property
+    def win_draw_rates(self) -> list[float]: 
+        return [(self.win_counts[i] + self.draw_counts[i]) / max(1, self.game_counts[i]) for i in range(self.total_engines)]
+
+    @property
+    def lose_counts(self) -> int:
+        return [self.game_counts[i] - self.win_counts[i] - self.draw_counts[i] for i in range(self.total_engines)]
+
+    @property
+    def lose_rates(self) -> list[float]: 
+        return [self.lose_counts[i] / max(1, self.game_counts[i]) for i in range(self.total_engines)]
     
     @property
     def avg_scores(self) -> list[float]: 
         return [self.total_scores[i] / max(1, self.game_counts[i]) for i in range(self.total_engines)]
 
     @property
+    def elo_delta(self) -> list[float]: 
+        return [self.elo_end[i] - self.elo_start[i] for i in range(self.total_engines)]
+
+    @property
     def average_match_duration(self) -> float:
         return self.total_time / max(1, self.total_games)
     
     def get_matches_by_engine(self, engine: int) -> list[MatchData]:
-        filtered_matches = [x for x in self.match_data if engine in x.engines]
-        return filtered_matches
-    
-    def get_game_count_by_engine(self, engine: int) -> int:
-        return self.game_counts[engine]
-    
-    def get_wins_by_engine(self, engine: int) -> int:
-        return self.win_counts[engine]
-    
-    def get_win_rate_by_engine(self, engine: int) -> float:
-        return self.win_counts[engine] / max(1, self.game_counts[engine])
-    
-    def get_score_by_engine(self, engine: int) -> int:
-        return self.total_scores[engine]
-    
-    def get_avg_score_by_engine(self, engine: int) -> float:
-        return self.total_scores[engine] / max(1, self.game_counts[engine])
-    
-    def get_starting_elo_by_engine(self, engine: int) -> int:
-        return self.elo_start[engine]
-    
-    def get_ending_elo_by_engine(self, engine: int) -> int:
-        return self.elo_end[engine]
-    
-    def get_delta_elo_by_engine(self, engine: int) -> int:
-        return self.elo_end[engine] - self.elo_start[engine]
+        return [x for x in self.match_data if engine in x.engines]
     
     def get_engine_rankings_display(self, sort_by: str = 'elo_end', sort_dir: str = 'desc') -> str:
+        # verify the given sort property exists
         if not hasattr(self, sort_by):
             return f"Invalid sort field '{sort_by}', must specify a valid TournamentResults property"
+
+        # verify the given sort property is valid
         sort_attr: list = getattr(self, sort_by)
         if not isinstance(sort_attr, list) or len(sort_attr) <= 0:
             return f"Invalid sort field '{sort_by}', must specify a list of length >0"
         if not isinstance(sort_attr[0], int) and not isinstance(sort_attr[0], float):
             return f"Invalid sort field '{sort_by}', must specify a numeric list"
+
+        # verify the given sort direction
         if sort_dir != 'asc' and sort_dir != 'desc':
             return f"Invalid sort direction '{sort_dir}', try 'asc' or 'desc'"
 
-        out = f"Ranking by {sort_by} {sort_dir}:\n"
-        out += f"{'Rank':4} {'Name':24} {'Elo':>5} {'Games':>6} {'Score':>10} {'Avg Score':>10} {'Wins':>6} {'Win Rate':>9}\n"
-        dir = -1 if sort_dir == 'desc' else 1
-        ranked_engines = sorted(range(len(self.engine_names)), key=lambda x: dir * sort_attr[x])
-        for rank, engine in enumerate(ranked_engines):
-            name = self.engine_names[engine]
-            wins, games = self.win_counts[engine], self.game_counts[engine]
-            score, elo = self.total_scores[engine], self.elo_end[engine]
+        # build the results table
+        N = self.total_engines
+        len_names = max(5, min(24, max([len(x) for x in self.engine_names]) + 1))
+        len_score = max(6, max([math.floor(math.log10(max(1, self.total_scores[i])) + 1) for i in range(N)]) + 1)
+        len_games = max(7, max([math.floor(math.log10(max(1, self.game_counts[i])) + 1) for i in range(N)]) + 1)
 
-            win_rate = f"{(wins / games * 100):>8.2f}%" if games > 0 else f"{'-':>9}"
+        out = f"Ranking by {sort_by} {sort_dir}:\n"
+        out += f"{'Rank':4} {'Name':{len_names}} {'Elo':>5} {'Score':>{len_score}} {'Avg Score':>10} {'Games':>{len_games}} "
+        out += f"{'Wins':>{len_games}} {'Draws':>{len_games}} {'Losses':>{len_games}} {'Win %':>7}\n"
+
+        dir = -1 if sort_dir == 'desc' else 1
+
+        for rank, engine in enumerate(sorted(range(len(self.engine_names)), key=lambda x: dir * sort_attr[x])):
+            name = self.engine_names[engine]
+            draws, wins, games = self.draw_counts[engine], self.win_counts[engine], self.game_counts[engine]
+            losses, score, elo = games - wins - draws, self.total_scores[engine], self.elo_end[engine]
+
+            win_rate = f"{(wins / games * 100):>6.2f}%" if games > 0 else f"{'-':>7}"
             avg_score = f"{(score / games):>10.2f}" if games > 0 else f"{'-':>10}"
 
-            out += f"{rank:>4d} {name:24.24} {elo:>5.0f} {games:>6d} {score:>10d} {avg_score} {wins:>6d} {win_rate}\n"
+            out += f"{rank:>4d} {name:{len_names}.{len_names}} {elo:>5.0f} {score:>{len_score}d} {avg_score} "
+            out += f"{games:>{len_games}d} {wins:>{len_games}d} {draws:>{len_games}d} {losses:>{len_games}d} {win_rate}\n"
+
         return out
 
 class Tournament: 
@@ -235,6 +249,7 @@ class Tournament:
         # initialize trackers and game controls
         N = len(self.engines)
         total_games = 0
+        draws = [0 for _ in range(N)]
         wins = [0 for _ in range(N)]
         games = [0 for _ in range(N)]
         elos = [0 for _ in range(N)]
@@ -245,19 +260,26 @@ class Tournament:
 
         # helper for getting engine rank summaries
         def get_engine_rankings() -> str:
-            out = f"\n{'Rank':4} {'Name':24} {'Elo':>5} {'Games':>6} {'Score':>10} "
-            out += f"{'Avg Score':>10} {'Wins':>6} {'Win Rate':>9}\n"
-            ranked_engines = sorted(range(N), key=lambda x: -elos[x])
-            for rank, engine in enumerate(ranked_engines):
+            len_name = max(5, min(24, max([len(x.name) for x in self.engines]) + 1))
+            len_score = max(6, max([math.floor(math.log10(max(1, totals[i])) + 1) for i in range(N)]) + 1)
+            len_games = max(7, max([math.floor(math.log10(max(1, games[i])) + 1) for i in range(N)]) + 1)
+
+            out = f"\n{'Rank':4} {'Name':{len_name}} {'Elo':>5} {'Score':>{len_score}} {'Avg Score':>10} "
+            out += f"{'Games':>{len_games}} {'Wins':>{len_games}} {'Draws':>{len_games}} "
+            out += f"{'Losses':>{len_games}} {'Win %':>7}\n"
+
+            for rank, engine in enumerate(sorted(range(N), key=lambda x: -elos[x])):
                 name = self.engines[engine].name
-                win_count, game_count = wins[engine], games[engine]
-                score, elo = totals[engine], elos[engine]
+                draw_count, win_count, game_count = draws[engine], wins[engine], games[engine]
+                loss_count, score, elo = game_count - win_count - draw_count, totals[engine], elos[engine]
                 
-                win_rate = f"{(win_count / game_count * 100):>8.2f}%" if game_count > 0 else f"{'-':>9}"
+                win_rate = f"{(win_count / game_count * 100):>6.2f}%" if game_count > 0 else f"{'-':>7}"
                 avg_score = f"{(score / game_count):>10.2f}" if game_count > 0 else f"{'-':>10}"
 
-                out += f"{rank:>4d} {name:24.24} {elo:>5.0f} {game_count:>6d} {score:>10d} "
-                out += f"{avg_score} {win_count:>6d} {win_rate}\n"
+                out += f"{rank:>4d} {name:{len_name}.{len_name}} {elo:>5.0f} {score:>{len_score}d} "
+                out += f"{avg_score} {game_count:>{len_games}d} {win_count:>{len_games}d} "
+                out += f"{draw_count:>{len_games}d} {loss_count:>{len_games}d} {win_rate}\n"
+
             return out
 
         # prepare turn orders for the various games
@@ -279,15 +301,27 @@ class Tournament:
         with multiprocessing.Pool(n_threads, initializer=init_func, initargs=init_args) as pool: 
             try:
                 for winners, scores, moves, player_to_engine, time_sec in pool.imap_unordered(self._play_game, args): 
+
+                    # re-build the board state from the moves
                     board = tilewe.Board(len(player_to_engine))
                     for move in moves: 
                         board.push(move) 
-                    if len(winners) > 0:  # at least one player always wins, if none then game crashed 
+
+                    # at least one player always wins, otherwise the game crashed 
+                    if len(winners) > 0:
+                        # track games played
                         total_games += 1 
                         for p in player_to_engine:
                             games[p] += 1
-                        for p in winners: 
-                            wins[p] += 1 
+
+                        # track wins and draws
+                        if len(winners) == 1:
+                            wins[winners[0]] += 1
+                        else:
+                            for p in winners:
+                                draws[p] += 1 
+
+                        # track scores and time
                         for p, s in enumerate(scores): 
                             totals[p] += s
                         total_time += time_sec
@@ -301,11 +335,12 @@ class Tournament:
                         # if there are enough players, compute elo changes
                         if board.n_players > 1:
                             player_elos = [elos[i] for i in game_players]
-                            delta_elos = compute_elo_adjustment_n(player_elos, player_scores)
+                            delta_elos = compute_elo_adjustment_n(player_elos, player_scores, K=8)
                             for index, player in enumerate(game_players):
                                 elos[player] += delta_elos[index]
                             new_elos = [elos[i] for i in game_players]
 
+                        # save match data
                         match_data = MatchData(
                             board,
                             game_players,
@@ -342,6 +377,7 @@ class Tournament:
             [x.name for x in self.engines],
             games,
             wins,
+            draws,
             totals,
             initial_elos,
             elos,
@@ -384,6 +420,7 @@ class Tournament:
             while not board.finished: 
                 engine = self.engines[player_to_engine[board.current_player]]
 
+                # ghetto board copy to avoid exposing the real board to the engine
                 b = tilewe.Board(n_players=len(player_to_engine))
                 for move in board.moves: 
                     b.push(move) 
