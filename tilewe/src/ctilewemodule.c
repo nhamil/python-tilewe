@@ -175,21 +175,25 @@ static PyObject* Board_NumLegalMoves(BoardObject* self, PyObject* args, PyObject
         NULL
     };
 
-    int player = -1; 
+    int player = Tw_Color_None; 
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &player)) 
     {
         return NULL; 
     }
 
-    if (player < 0) 
+    if (player == Tw_Color_None) 
     {
-        return PyLong_FromLong(Tw_Board_NumMoves(&self->Board)); 
+        player = self->Board.CurTurn; 
     }
-    else 
+
+    if (player >= 0 && player < self->Board.NumPlayers) 
     {
         return PyLong_FromLong(Tw_Board_NumMovesForPlayer(&self->Board, (Tw_Color) player)); 
     }
+
+    PyErr_SetString(PyExc_AttributeError, "for_player must be valid or None"); 
+    return NULL; 
 }
 
 static PyObject* Board_Pop(BoardObject* self, PyObject* Py_UNUSED(ignored)) 
