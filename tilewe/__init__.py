@@ -3,7 +3,136 @@ import sys
 if sys.version_info[0] != 3 or sys.version_info[1] < 10:
     raise Exception("Requires Python 3.10+")
 
-from ctilewe import *
+Tile = int
+Piece = int 
+Rotation = int 
+Color = int
+Move = int
+
+TILES: list[Tile] 
+PIECES: list[Piece] 
+ROTATIONS: list[Rotation] 
+COLOR: list[Color] 
+
+NO_PIECES: Piece 
+NO_COLOR: Color 
+
+TILE_NAMES: list[str] 
+PIECE_NAMES: list[str] 
+ROTATION_NAMES: list[str] 
+COLOR_NAMES: list[str] 
+
+def tile_to_coords(tile: Tile) -> tuple[int, int]: ...
+
+def tile_in_bounds(tile: Tile) -> bool: ...
+
+def coords_to_tile(coords: tuple[int, int]) -> Tile: ...
+
+def coords_in_bounds(coords: tuple[int, int]) -> bool: ...
+
+def n_piece_contacts(piece: Piece) -> int: ...
+
+def n_piece_tiles(piece: Piece) -> int: ...
+
+def n_piece_corners(piece: Piece) -> int: ...
+
+def piece_tiles(piece: Piece, rotation: Rotation) -> list[Tile]: ...
+
+def piece_tile_coords(piece: Piece, rotation: Rotation, contact: Tile=None) -> list[tuple[int, int]]: ...
+
+def create_move(piece: Piece, rotation: Rotation, contact: Tile, to_tile: Tile) -> Move: ...
+
+def move_piece(move: Move) -> Piece: ...
+
+def move_rotation(move: Move) -> Rotation: ...
+
+def move_contact(move: Move) -> Tile: ...
+
+def move_tile(move: Move) -> Tile: ...
+
+class Board: 
+
+    def __init__(self, n_players: int=4): 
+        ...
+
+    def __str__(self) -> str: 
+        ...
+
+    @property 
+    def ply(self) -> int: 
+        ...
+
+    @property 
+    def current_player(self) -> Color: 
+        """Color of the current player"""
+        ...
+
+    @property 
+    def cur_player(self) -> Color: 
+        """Color of the current player"""
+        ...
+
+    @property
+    def n_players(self) -> int: 
+        """Number of players"""
+        ...
+
+    @property 
+    def scores(self) -> list[int]: 
+        ...
+
+    @property
+    def winners(self) -> list[int]: 
+        ...
+
+    @property 
+    def finished(self) -> bool: 
+        """Whether the game is done"""
+        ...
+
+    def generate_legal_moves(self, for_player: Color=None) -> list[Move]: 
+        """Generates moves"""
+        ... 
+
+    def push(self, move: Move) -> None: 
+        """Play a move"""
+        ...
+
+    def pop(self) -> None: 
+        """Undo a move"""
+        ...
+
+    def n_legal_moves(self, for_player: Color=None) -> int: 
+        """Gets total number of legal moves for a player"""
+        ...
+
+    def n_remaining_pieces(self, for_player: Color=None) -> int: 
+        """Gets total number of pieces remaining for a player"""
+        ...
+
+    def remaining_pieces(self, for_player: Color=None) -> list[Piece]: 
+        """Gets a list of pieces remaining for a player"""
+        ...
+
+    def n_player_corners(self, for_player: Color=None) -> int: 
+        """Gets total number of open corners for a player"""
+        ...
+
+    def player_corners(self, for_player: Color=None) -> list[Tile]: 
+        """Gets a list of the open corners for a player"""
+        ...
+
+    def player_score(self, for_player: Color=None) -> int: 
+        """Gets the score of a player"""
+        ...
+        
+    def can_play(self, for_player: Color=None) -> bool: 
+        """Whether a player has remaining moves"""
+        ...
+
+    def is_legal(self, move: Move, for_player: Color=None) -> bool: 
+        """Whether a move is legal for a player"""
+        ...
 
 Tile = int
 Piece = int 
@@ -64,6 +193,21 @@ TILE_NAMES = [
     "a20", "b20", "c20", "d20", "e20", "f20", "g20", "h20", "i20", "j20", "k20", "l20", "m20", "n20", "o20", "p20", "q20", "r20", "s20", "t20"   # noqa: 501
 ]
 
+def tile_to_coords(tile: Tile) -> tuple[int, int]: 
+    return TILE_COORDS[tile]  
+
+def coords_to_tile(coords: tuple[int, int]) -> Tile: 
+    return coords[0] + coords[1] * 20 
+
+def tile_to_index(tile: Tile) -> int: 
+    return tile
+
+def out_of_bounds(coords: tuple[int, int]) -> int:
+    return not (0 <= coords[0] < 20 and 0 <= coords[1] < 20)
+
+def in_bounds(coords: tuple[int, int]) -> bool:
+    return 0 <= coords[0] < 20 and 0 <= coords[1] < 20
+
 ROTATIONS = [
     NORTH, EAST, SOUTH, WEST, NORTH_F, EAST_F, SOUTH_F, WEST_F
 ] = [Rotation(x) for x in range(8)]
@@ -95,3 +239,5 @@ PIECE_NAMES = [
     "Z4", "T4", "F5", "I5", "L5", "N5", "P5", 
     "T5", "U5", "V5", "W5", "X5", "Y5", "Z5", 
 ]
+
+from ctilewe import *
