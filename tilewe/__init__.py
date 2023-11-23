@@ -63,3 +63,35 @@ TILE_NAMES = [
     "a19", "b19", "c19", "d19", "e19", "f19", "g19", "h19", "i19", "j19", "k19", "l19", "m19", "n19", "o19", "p19", "q19", "r19", "s19", "t19",  # noqa: 501
     "a20", "b20", "c20", "d20", "e20", "f20", "g20", "h20", "i20", "j20", "k20", "l20", "m20", "n20", "o20", "p20", "q20", "r20", "s20", "t20"   # noqa: 501
 ]
+
+ROTATIONS = [
+    NORTH, EAST, SOUTH, WEST, NORTH_F, EAST_F, SOUTH_F, WEST_F
+] = [Rotation(x) for x in range(8)]
+
+ROTATION_NAMES = [
+    'n', 'e', 's', 'w', 'nf', 'ef', 'sf', 'wf'
+]
+
+COLORS = [
+    BLUE, YELLOW, RED, GREEN
+] = [Color(x) for x in range(4)]
+
+NO_COLOR: Color = len(COLORS) 
+
+COLOR_NAMES = [
+    'blue', 'yellow', 'red', 'green'
+]
+
+PIECES = [
+    O1, I2, I3, L3, O4, I4, L4, 
+    Z4, T4, F5, I5, L5, N5, P5, 
+    T5, U5, V5, W5, X5, Y5, Z5, 
+] = [Piece(x) for x in range(21)]
+
+NO_PIECE: Piece = len(PIECES) 
+
+PIECE_NAMES = [
+    "O1", "I2", "I3", "L3", "O4", "I4", "L4", 
+    "Z4", "T4", "F5", "I5", "L5", "N5", "P5", 
+    "T5", "U5", "V5", "W5", "X5", "Y5", "Z5", 
+]

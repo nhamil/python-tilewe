@@ -15,7 +15,7 @@ struct BoardObject
 
 static int Board_init(BoardObject* self, PyObject* args, PyObject* kwds) 
 {
-    static char* kwlist[] = { "n_players", NULL }; 
+    static const char* kwlist[] = { "n_players", NULL }; 
 
     int numPlayers = 4; 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &numPlayers)) 
@@ -198,6 +198,41 @@ static bool ForPlayerArgHandler(BoardObject* self, PyObject* args, PyObject* kwd
     return true;
 }
 
+// TODO use better way that doesn't duplicate so much code 
+static bool ForPlayerAndMoveArgHandler(BoardObject* self, PyObject* args, PyObject* kwds, unsigned* move, int* player) 
+{
+    static const char* kwlist[] = 
+    {
+        "move", 
+        "for_player", 
+        NULL
+    };
+
+    *player = Tw_Color_None; 
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|Ii", kwlist, move, player)) 
+    {
+        *move = (unsigned) Tw_NoMove; 
+        *player = -1; 
+        return false;
+    }
+
+    if (*player == Tw_Color_None) 
+    {
+        *player = self->Board.CurTurn; 
+    }
+
+    if (*player < 0 || *player >= self->Board.NumPlayers) 
+    {
+        *move = (unsigned) Tw_NoMove; 
+        *player = -1; 
+        PyErr_SetString(PyExc_AttributeError, "for_player must be valid or None"); 
+        return false;
+    }
+
+    return true;
+}
+
 static PyObject* Board_NumLegalMoves(BoardObject* self, PyObject* args, PyObject* kwds) 
 {
     int player;
@@ -207,6 +242,32 @@ static PyObject* Board_NumLegalMoves(BoardObject* self, PyObject* args, PyObject
     }
 
     return PyLong_FromLong(Tw_Board_NumMovesForPlayer(&self->Board, (Tw_Color) player)); 
+}
+
+static PyObject* Board_PlayerPcs(BoardObject* self, PyObject* args, PyObject* kwds) 
+{
+    int player;
+    if (!ForPlayerArgHandler(self, args, kwds, &player))
+    {
+        return NULL;
+    }
+
+    // get a list of the player's pieces
+    Tw_PcList pcs;
+    Tw_InitPcList(&pcs);
+    Tw_Board_PlayerPcs(&self->Board, player, &pcs);
+
+    // build Python list of the pieces
+    PyObject* list = PyList_New(pcs.Count); 
+    for (int i = 0; i < pcs.Count; i++) {
+        PyList_SetItem(
+            list, 
+            i, 
+            PyLong_FromUnsignedLong((unsigned long) pcs.Elements[i])
+        ); 
+    }
+
+    return list; 
 }
 
 static PyObject* Board_NumPlayerPcs(BoardObject* self, PyObject* args, PyObject* kwds) 
@@ -246,6 +307,28 @@ static PyObject* Board_PlayerCorners(BoardObject* self, PyObject* args, PyObject
     return list; 
 }
 
+static PyObject* Board_PlayerScore(BoardObject* self, PyObject* args, PyObject* kwds) 
+{
+    int player;
+    if (!ForPlayerArgHandler(self, args, kwds, &player))
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(self->Board.Players[player].Score); 
+}
+
+static PyObject* Board_CanPlay(BoardObject* self, PyObject* args, PyObject* kwds) 
+{
+    int player;
+    if (!ForPlayerArgHandler(self, args, kwds, &player))
+    {
+        return NULL;
+    }
+
+    return PyBool_FromLong((long) self->Board.Players[player].CanPlay); 
+}
+
 static PyObject* Board_NumPlayerCorners(BoardObject* self, PyObject* args, PyObject* kwds) 
 {
     int player;
@@ -255,6 +338,18 @@ static PyObject* Board_NumPlayerCorners(BoardObject* self, PyObject* args, PyObj
     }
 
     return PyLong_FromLong(Tw_Board_NumPlayerCorners(&self->Board, player)); 
+}
+
+static PyObject* Board_IsLegal(BoardObject* self, PyObject* args, PyObject* kwds) 
+{
+    int player;
+    unsigned move; 
+    if (!ForPlayerAndMoveArgHandler(self, args, kwds, &move, &player))
+    {
+        return NULL;
+    }
+
+    return PyBool_FromLong(Tw_Board_IsLegalForPlayer(&self->Board, (Tw_Color) player, (Tw_Move) move)); 
 }
 
 static PyObject* Board_Pop(BoardObject* self, PyObject* Py_UNUSED(ignored)) 
@@ -311,8 +406,12 @@ static PyMethodDef Board_methods[] =
     { "color_at", Board_ColorAt, METH_VARARGS | METH_KEYWORDS, "Color that claimed the tile" }, 
     { "n_legal_moves", Board_NumLegalMoves, METH_VARARGS | METH_KEYWORDS, "Gets total number of legal moves for a player" }, 
     { "n_remaining_pieces", Board_NumPlayerPcs, METH_VARARGS | METH_KEYWORDS, "Gets total number of pieces remaining for a player" }, 
+    { "remaining_pieces", Board_PlayerPcs, METH_VARARGS | METH_KEYWORDS, "Gets a list of pieces remaining for a player" }, 
     { "n_player_corners", Board_NumPlayerCorners, METH_VARARGS | METH_KEYWORDS, "Gets total number of open corners for a player" }, 
     { "player_corners", Board_PlayerCorners, METH_VARARGS | METH_KEYWORDS, "Gets a list of the open corners for a player" }, 
+    { "player_score", Board_PlayerScore, METH_VARARGS | METH_KEYWORDS, "Gets the score of a player" }, 
+    { "can_play", Board_CanPlay, METH_VARARGS | METH_KEYWORDS, "Whether a player has remaining moves" }, 
+    { "is_legal", Board_IsLegal, METH_VARARGS | METH_KEYWORDS, "Whether a move is legal for a player" }, 
     // { "copy", Board_Copy, METH_NOARGS, "Returns a clone of the current board state" }, 
     { NULL }
 };
