@@ -1,5 +1,5 @@
 import math
-from scipy.special import erfinv
+import pyerf
 
 def elo_win_probability(elo1: float, elo2: float, C: int=400):
     """
@@ -120,7 +120,7 @@ def compute_inverse_error(e: float) -> float:
         The inverse error of e
     """
     
-    return math.sqrt(2) * erfinv(2 * e - 1)
+    return math.sqrt(2) * pyerf.erfinv(2 * e - 1)
 
 def compute_elo_error_margin(wins: int, draws: int, losses: int, confidence: float=0.95, C: int=400) -> float:
     """
