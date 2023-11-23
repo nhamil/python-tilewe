@@ -708,9 +708,9 @@ static PyObject* Tilewe_MoveCon(PyObject* self, PyObject* args, PyObject* kwds)
         return NULL;
     }
 
+
     return PyLong_FromLong(Tw_Move_Con(move)); 
 }
-
 
 static PyObject* Tilewe_MoveTile(PyObject* self, PyObject* args, PyObject* kwds) 
 {
@@ -721,6 +721,36 @@ static PyObject* Tilewe_MoveTile(PyObject* self, PyObject* args, PyObject* kwds)
     }
 
     return PyLong_FromLong(Tw_Move_ToTile(move)); 
+}
+
+static PyObject* Tilewe_CreateMove(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    static const char* kwlist[] = 
+    {
+        "piece", 
+        "rotation", 
+        "contact", 
+        "to_tile", 
+        NULL
+    };
+
+    unsigned pc, rot, con, tile; 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "IIII", kwlist, &pc, &rot, &con, &tile)) 
+    {
+        // PyErr_SetString(PyExc_AttributeError, "piece must be valid"); 
+        return false;
+    }
+
+    Tw_Move move = Tw_MakeMove_Safe(pc, rot, con, tile); 
+    
+    if (move == Tw_NoMove) 
+    {
+        Py_RETURN_NONE; 
+    }
+    else 
+    {
+        PyLong_FromLong(move); 
+    }
 }
 
 static PyObject* Tilewe_PlayRandomGame(PyObject* self, PyObject* args) 
@@ -757,6 +787,7 @@ static PyMethodDef TileweMethods[] =
     { "move_rotation", Tilewe_MoveRot, METH_VARARGS | METH_KEYWORDS, "Gets the piece rotation used in a move" }, 
     { "move_contact", Tilewe_MoveCon, METH_VARARGS | METH_KEYWORDS, "Gets the contact tile used in a move" }, 
     { "move_tile", Tilewe_MoveTile, METH_VARARGS | METH_KEYWORDS, "Gets the open corner used in a move" }, 
+    { "create_move", Tilewe_CreateMove, METH_VARARGS | METH_KEYWORDS, "Creates a move from a piece, rotation, contact, and tile" }, 
     { NULL, NULL, 0, NULL }
 };
 
