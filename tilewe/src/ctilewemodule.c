@@ -35,7 +35,7 @@ static int Board_init(BoardObject* self, PyObject* args, PyObject* kwds)
 
 static PyObject* Board_CurrentPlayer(BoardObject* self, void* closure) 
 {
-    return PyBool_FromLong(self->Board.CurTurn); 
+    return PyLong_FromLong(self->Board.CurTurn); 
 }
 
 static PyObject* Board_NumPlayers(BoardObject* self, void* closure) 
@@ -167,7 +167,7 @@ static PyObject* Board_ColorAt(BoardObject* self, PyObject* args, PyObject* kwds
     return PyLong_FromUnsignedLong(Tw_Board_ColorAt(&self->Board, tile)); 
 }
 
-static PyObject* Board_NumLegalMoves(BoardObject* self, PyObject* args, PyObject* kwds) 
+static bool ForPlayerArgHandler(BoardObject* self, PyObject* args, PyObject* kwds, int* player) 
 {
     static const char* kwlist[] = 
     {
@@ -175,54 +175,86 @@ static PyObject* Board_NumLegalMoves(BoardObject* self, PyObject* args, PyObject
         NULL
     };
 
-    int player = Tw_Color_None; 
+    *player = Tw_Color_None; 
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &player)) 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, player)) 
     {
-        return NULL; 
+        *player = -1; 
+        return false;
     }
 
-    if (player == Tw_Color_None) 
+    if (*player == Tw_Color_None) 
     {
-        player = self->Board.CurTurn; 
+        *player = self->Board.CurTurn; 
     }
 
-    if (player >= 0 && player < self->Board.NumPlayers) 
+    if (*player < 0 || *player >= self->Board.NumPlayers) 
     {
-        return PyLong_FromLong(Tw_Board_NumMovesForPlayer(&self->Board, (Tw_Color) player)); 
+        *player = -1; 
+        PyErr_SetString(PyExc_AttributeError, "for_player must be valid or None"); 
+        return false;
     }
 
-    PyErr_SetString(PyExc_AttributeError, "for_player must be valid or None"); 
-    return NULL; 
+    return true;
+}
+
+static PyObject* Board_NumLegalMoves(BoardObject* self, PyObject* args, PyObject* kwds) 
+{
+    int player;
+    if (!ForPlayerArgHandler(self, args, kwds, &player))
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(Tw_Board_NumMovesForPlayer(&self->Board, (Tw_Color) player)); 
 }
 
 static PyObject* Board_NumPlayerPcs(BoardObject* self, PyObject* args, PyObject* kwds) 
 {
-    static const char* kwlist[] = 
+    int player;
+    if (!ForPlayerArgHandler(self, args, kwds, &player))
     {
-        "for_player", 
-        NULL
-    };
-
-    int player = Tw_Color_None; 
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &player)) 
-    {
-        return NULL; 
+        return NULL;
     }
 
-    if (player == Tw_Color_None) 
+    return PyLong_FromLong(Tw_Board_NumPlayerPcs(&self->Board, (Tw_Color) player)); 
+}
+
+static PyObject* Board_PlayerCorners(BoardObject* self, PyObject* args, PyObject* kwds) 
+{
+    int player;
+    if (!ForPlayerArgHandler(self, args, kwds, &player))
     {
-        player = self->Board.CurTurn; 
+        return NULL;
     }
 
-    if (player >= 0 && player < self->Board.NumPlayers) 
-    {
-        return PyLong_FromLong(Tw_Board_NumPlayerPcs(&self->Board, (Tw_Color) player)); 
+    // get a list of the player's open corners
+    Tw_TileList openCorners;
+    Tw_InitTileList(&openCorners);
+    Tw_Board_PlayerCorners(&self->Board, player, &openCorners);
+
+    // build Python list of the open corner tiles
+    PyObject* list = PyList_New(openCorners.Count); 
+    for (int i = 0; i < openCorners.Count; i++) {
+        PyList_SetItem(
+            list, 
+            i, 
+            PyLong_FromUnsignedLong((unsigned long) openCorners.Elements[i])
+        ); 
     }
 
-    PyErr_SetString(PyExc_AttributeError, "for_player must be valid or None"); 
-    return NULL; 
+    return list; 
+}
+
+static PyObject* Board_NumPlayerCorners(BoardObject* self, PyObject* args, PyObject* kwds) 
+{
+    int player;
+    if (!ForPlayerArgHandler(self, args, kwds, &player))
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(Tw_Board_NumPlayerCorners(&self->Board, player)); 
 }
 
 static PyObject* Board_Pop(BoardObject* self, PyObject* Py_UNUSED(ignored)) 
@@ -279,6 +311,8 @@ static PyMethodDef Board_methods[] =
     { "color_at", Board_ColorAt, METH_VARARGS | METH_KEYWORDS, "Color that claimed the tile" }, 
     { "n_legal_moves", Board_NumLegalMoves, METH_VARARGS | METH_KEYWORDS, "Gets total number of legal moves for a player" }, 
     { "n_remaining_pieces", Board_NumPlayerPcs, METH_VARARGS | METH_KEYWORDS, "Gets total number of pieces remaining for a player" }, 
+    { "n_player_corners", Board_NumPlayerCorners, METH_VARARGS | METH_KEYWORDS, "Gets total number of open corners for a player" }, 
+    { "player_corners", Board_PlayerCorners, METH_VARARGS | METH_KEYWORDS, "Gets a list of the open corners for a player" }, 
     // { "copy", Board_Copy, METH_NOARGS, "Returns a clone of the current board state" }, 
     { NULL }
 };

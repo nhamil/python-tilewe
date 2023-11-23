@@ -139,11 +139,12 @@ class MaximizeMoveDifferenceEngine(Engine):
         random.shuffle(moves) 
         
         player = board.current_player
+        N = board.n_players
 
         def eval_after_move(m: tilewe.Move) -> int: 
             with MoveExecutor(board, m):
                 total = 0
-                for color in range(board.n_players): 
+                for color in range(N): 
                     n_moves = board.n_legal_moves(for_player=color)
                     total += n_moves * (1 if color == player else -1)
                 return total

@@ -418,14 +418,14 @@ class Tournament:
         try: 
             engine_to_player = { value: key for key, value in enumerate(player_to_engine) }
             while not board.finished: 
-                engine = self.engines[player_to_engine[board.current_player]]
 
                 # ghetto board copy to avoid exposing the real board to the engine
-                b = tilewe.Board(n_players=len(player_to_engine))
+                board_copy = tilewe.Board(n_players=len(player_to_engine))
                 for move in board.moves: 
-                    b.push(move) 
+                    board_copy.push(move) 
+                engine = self.engines[player_to_engine[board_copy.current_player]]
 
-                move = engine.search(b, self.move_seconds) 
+                move = engine.search(board_copy, self.move_seconds) 
                 # move = engine.search(board.copy_current_state(), self.move_seconds) 
                 # TODO test legality 
                 board.push(move) 
