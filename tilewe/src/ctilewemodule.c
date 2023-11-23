@@ -210,7 +210,7 @@ static bool ForPlayerAndMoveArgHandler(BoardObject* self, PyObject* args, PyObje
 
     *player = Tw_Color_None; 
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|Ii", kwlist, move, player)) 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "I|i", kwlist, move, player)) 
     {
         *move = (unsigned) Tw_NoMove; 
         *player = -1; 
@@ -366,24 +366,6 @@ static PyObject* Board_str(BoardObject* self, PyObject* Py_UNUSED(ignored))
     return PyUnicode_FromString(buf); 
 }
 
-static PyObject* Tilewe_PlayRandomGame(PyObject* self, PyObject* args) 
-{
-    Tw_Board board[1]; 
-    Tw_MoveList moves[1]; 
-    Tw_InitBoard(board, 4); 
-
-    while (!board->Finished) 
-    {
-        Tw_InitMoveList(moves); 
-        Tw_Board_GenMoves(board, moves); 
-        Tw_Board_Push(board, moves->Elements[rand() % moves->Count]); 
-    }
-
-    Tw_Board_Print(board); 
-
-    Py_RETURN_NONE; 
-}
-
 static PyGetSetDef Board_getsets[] = 
 {
     { "moves", Board_Moves, NULL, "Move history", NULL },
@@ -399,8 +381,8 @@ static PyGetSetDef Board_getsets[] =
 
 static PyMethodDef Board_methods[] = 
 {
-    { "generate_legal_moves", Board_GenMoves, METH_NOARGS, "Returns a list of legal moves" }, 
-    { "gen_moves", Board_GenMoves, METH_NOARGS, "Returns a list of legal moves" }, 
+    { "generate_legal_moves", Board_GenMoves, METH_VARARGS | METH_KEYWORDS, "Returns a list of legal moves" }, 
+    { "gen_moves", Board_GenMoves, METH_VARARGS | METH_KEYWORDS, "Returns a list of legal moves" }, 
     { "push", Board_Push, METH_VARARGS | METH_KEYWORDS, "Plays a move" }, 
     { "pop", Board_Pop, METH_NOARGS, "Undoes a move" }, 
     { "color_at", Board_ColorAt, METH_VARARGS | METH_KEYWORDS, "Color that claimed the tile" }, 
@@ -431,9 +413,381 @@ static PyTypeObject BoardType =
     .tp_methods = Board_methods
 };
 
+static bool TileArgHandler(PyObject* args, PyObject* kwds, bool checkBounds, Tw_Tile* tile) 
+{
+    static const char* kwlist[] = 
+    {
+        "tile", 
+        NULL
+    };
+
+    *tile = Tw_Tile_None; 
+
+    unsigned tileValue; 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "I", kwlist, &tileValue)) 
+    {
+        return false;
+    }
+
+    *tile = (Tw_Tile) tileValue; 
+
+    if (checkBounds && !Tw_Tile_InBounds(*tile)) 
+    {
+        PyErr_SetString(PyExc_AttributeError, "tile must be in bounds"); 
+        return false;
+    }
+
+    return true;
+}
+
+static bool CoordsArgHandler(PyObject* args, PyObject* kwds, bool checkBounds, int vals[2]) 
+{
+    static const char* kwlist[] = 
+    {
+        "coords", 
+        NULL
+    };
+
+    vals[0] = vals[1] = 0; 
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "(ii)", kwlist, vals, vals + 1)) 
+    {
+        return false;
+    }
+
+    if (checkBounds && !Tw_CoordsInBounds(vals[0], vals[1])) 
+    {
+        PyErr_SetString(PyExc_AttributeError, "coords must be in bounds"); 
+        return false;
+    }
+
+    return true;
+}
+
+static bool PcArgHandler(PyObject* args, PyObject* kwds, bool checkBounds, Tw_Pc* pc) 
+{
+    static const char* kwlist[] = 
+    {
+        "piece", 
+        NULL
+    };
+
+    *pc = Tw_Pc_None; 
+
+    unsigned pcValue; 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "I", kwlist, &pcValue)) 
+    {
+        return false;
+    }
+
+    *pc = (Tw_Pc) pcValue; 
+
+    if (checkBounds && !Tw_Tile_InBounds(*pc)) 
+    {
+        PyErr_SetString(PyExc_AttributeError, "piece must be valid"); 
+        return false;
+    }
+
+    return true;
+}
+
+static bool PcRotArgHandler(PyObject* args, PyObject* kwds, bool checkBounds, Tw_Pc* pc, Tw_Rot* rot) 
+{
+    static const char* kwlist[] = 
+    {
+        "piece", 
+        "rotation", 
+        NULL
+    };
+
+    *pc = Tw_Pc_None; 
+    *rot = Tw_Rot_N; 
+
+    unsigned pcValue, rotValue; 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "II", kwlist, &pcValue, &rotValue)) 
+    {
+        return false;
+    }
+
+    *pc = (Tw_Pc) pcValue; 
+    *rot = (Tw_Rot) rotValue; 
+
+    if (checkBounds && !Tw_Tile_InBounds(*pc)) 
+    {
+        PyErr_SetString(PyExc_AttributeError, "piece must be valid"); 
+        return false;
+    }
+
+    if (checkBounds && (*rot < 0 || *rot >= Tw_NumRots))
+    {
+        PyErr_SetString(PyExc_AttributeError, "rotation must be valid"); 
+        return false;
+    }
+
+    return true;
+}
+
+static bool MoveArgHandler(PyObject* args, PyObject* kwds, bool checkBounds, Tw_Move* move) 
+{
+    static const char* kwlist[] = 
+    {
+        "move", 
+        NULL
+    };
+
+    *move = Tw_NoMove; 
+
+    unsigned moveValue; 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "I", kwlist, &moveValue)) 
+    {
+        return false;
+    }
+
+    Tw_Move tmp = *move = (Tw_Move) moveValue; 
+
+    if (checkBounds && (tmp == Tw_NoMove || tmp != Tw_MakeMove_Safe(
+        Tw_Move_Pc(tmp), 
+        Tw_Move_Rot(tmp), 
+        Tw_Move_Con(tmp), 
+        Tw_Move_ToTile(tmp) 
+    ))) 
+    {
+        PyErr_SetString(PyExc_AttributeError, "move must be valid"); 
+        return false;
+    }
+
+    return true;
+}
+
+static PyObject* Tilewe_TileToCoords(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Tile tile; 
+    if (!TileArgHandler(args, kwds, true, &tile)) 
+    {
+        return NULL;
+    }
+
+    int x, y; 
+    Tw_Tile_ToCoords(tile, &x, &y); 
+
+    return Py_BuildValue("ii", x, y); 
+}
+
+static PyObject* Tilewe_TileInBounds(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Tile tile; 
+    if (!TileArgHandler(args, kwds, false, &tile)) 
+    {
+        return NULL;
+    }
+
+    return PyBool_FromLong(Tw_Tile_InBounds(tile)); 
+}
+
+static PyObject* Tilewe_CoordsToTile(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    int vals[2]; 
+    if (!CoordsArgHandler(args, kwds, true, vals)) 
+    {
+        return NULL;
+    }
+
+    return Py_BuildValue("i", Tw_MakeTile(vals[0], vals[1])); 
+}
+
+static PyObject* Tilewe_CoordsInBounds(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    int vals[2]; 
+    if (!CoordsArgHandler(args, kwds, false, vals)) 
+    {
+        return NULL;
+    }
+
+    return PyBool_FromLong(Tw_CoordsInBounds(vals[0], vals[1])); 
+}
+
+static PyObject* Tilewe_NumPcContacts(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Pc pc; 
+    if (!PcArgHandler(args, kwds, true, &pc)) 
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(Tw_TileSet_Count(&Tw_RotPcInfos[Tw_ToRotPc(pc, Tw_Rot_N)].Contacts)); 
+}
+
+static PyObject* Tilewe_NumPcTiles(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Pc pc; 
+    if (!PcArgHandler(args, kwds, true, &pc)) 
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(Tw_TileSet_Count(&Tw_RotPcInfos[Tw_ToRotPc(pc, Tw_Rot_N)].Tiles)); 
+}
+
+static PyObject* Tilewe_NumPcCorners(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Pc pc; 
+    if (!PcArgHandler(args, kwds, true, &pc)) 
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(Tw_TileSet_Count(&Tw_RotPcInfos[Tw_ToRotPc(pc, Tw_Rot_N)].RelCorners)); 
+}
+
+static PyObject* Tilewe_PcTiles(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Pc pc; 
+    Tw_Rot rot; 
+    if (!PcRotArgHandler(args, kwds, true, &pc, &rot)) 
+    {
+        return NULL;
+    }
+
+    PyObject* list = PyList_New(0); 
+
+    Tw_TileSet_FOR_EACH(Tw_RotPcInfos[Tw_ToRotPc(pc, rot)].Tiles, tile, 
+    {
+        PyList_Append(list, PyLong_FromLong((long) tile)); 
+    });
+
+    return list; 
+}
+
+static PyObject* Tilewe_PcContacts(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Pc pc; 
+    Tw_Rot rot; 
+    if (!PcRotArgHandler(args, kwds, true, &pc, &rot)) 
+    {
+        return NULL;
+    }
+
+    PyObject* list = PyList_New(0); 
+
+    Tw_TileSet_FOR_EACH(Tw_RotPcInfos[Tw_ToRotPc(pc, Tw_Rot_N)].Contacts, tile, 
+    {
+        PyList_Append(list, PyLong_FromLong((long) tile)); 
+    });
+
+    return list; 
+}
+
+static PyObject* Tilewe_MovePc(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Move move; 
+    if (!MoveArgHandler(args, kwds, true, &move)) 
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(Tw_Move_Pc(move)); 
+}
+
+static PyObject* Tilewe_MoveRot(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Move move; 
+    if (!MoveArgHandler(args, kwds, true, &move)) 
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(Tw_Move_Rot(move)); 
+}
+
+
+static PyObject* Tilewe_MoveCon(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Move move; 
+    if (!MoveArgHandler(args, kwds, true, &move)) 
+    {
+        return NULL;
+    }
+
+
+    return PyLong_FromLong(Tw_Move_Con(move)); 
+}
+
+static PyObject* Tilewe_MoveTile(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Move move; 
+    if (!MoveArgHandler(args, kwds, true, &move)) 
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(Tw_Move_ToTile(move)); 
+}
+
+static PyObject* Tilewe_CreateMove(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    static const char* kwlist[] = 
+    {
+        "piece", 
+        "rotation", 
+        "contact", 
+        "to_tile", 
+        NULL
+    };
+
+    unsigned pc, rot, con, tile; 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "IIII", kwlist, &pc, &rot, &con, &tile)) 
+    {
+        // PyErr_SetString(PyExc_AttributeError, "piece must be valid"); 
+        return false;
+    }
+
+    Tw_Move move = Tw_MakeMove_Safe(pc, rot, con, tile); 
+
+    if (move == Tw_NoMove) 
+    {
+        Py_RETURN_NONE; 
+    }
+    else 
+    {
+        PyLong_FromLong(move); 
+    }
+}
+
+static PyObject* Tilewe_PlayRandomGame(PyObject* self, PyObject* args) 
+{
+    Tw_Board board[1]; 
+    Tw_MoveList moves[1]; 
+    Tw_InitBoard(board, 4); 
+
+    while (!board->Finished) 
+    {
+        Tw_InitMoveList(moves); 
+        Tw_Board_GenMoves(board, moves); 
+        Tw_Board_Push(board, moves->Elements[rand() % moves->Count]); 
+    }
+
+    Tw_Board_Print(board); 
+
+    Py_RETURN_NONE; 
+}
+
 static PyMethodDef TileweMethods[] = 
 {
     { "play_random_game", Tilewe_PlayRandomGame, METH_NOARGS, "Plays a random game" }, 
+    { "tile_to_coords", Tilewe_TileToCoords, METH_VARARGS | METH_KEYWORDS, "Get x,y coordinates of a tile" }, 
+    { "tile_in_bounds", Tilewe_TileInBounds, METH_VARARGS | METH_KEYWORDS, "Checks if tile is in bounds" }, 
+    { "coords_to_tile", Tilewe_CoordsToTile, METH_VARARGS | METH_KEYWORDS, "Get tile from x,y coordinates" }, 
+    { "coords_in_bounds", Tilewe_CoordsInBounds, METH_VARARGS | METH_KEYWORDS, "Checks if coords are in bounds" }, 
+    { "n_piece_tiles", Tilewe_NumPcTiles, METH_VARARGS | METH_KEYWORDS, "Gets number of tiles in a piece" }, 
+    { "n_piece_contacts", Tilewe_NumPcContacts, METH_VARARGS | METH_KEYWORDS, "Gets number of contacts in a piece" }, 
+    { "n_piece_corners", Tilewe_NumPcCorners, METH_VARARGS | METH_KEYWORDS, "Gets number of corners in a piece" }, 
+    { "piece_tiles", Tilewe_PcTiles, METH_VARARGS | METH_KEYWORDS, "Gets tiles in a rotated piece" }, 
+    { "piece_contacts", Tilewe_PcContacts, METH_VARARGS | METH_KEYWORDS, "Gets contacts in a rotated piece" }, 
+    { "move_piece", Tilewe_MovePc, METH_VARARGS | METH_KEYWORDS, "Gets the piece used in a move" }, 
+    { "move_rotation", Tilewe_MoveRot, METH_VARARGS | METH_KEYWORDS, "Gets the piece rotation used in a move" }, 
+    { "move_contact", Tilewe_MoveCon, METH_VARARGS | METH_KEYWORDS, "Gets the contact tile used in a move" }, 
+    { "move_tile", Tilewe_MoveTile, METH_VARARGS | METH_KEYWORDS, "Gets the open corner used in a move" }, 
+    { "create_move", Tilewe_CreateMove, METH_VARARGS | METH_KEYWORDS, "Creates a move from a piece, rotation, contact, and tile" }, 
     { NULL, NULL, 0, NULL }
 };
 
@@ -448,6 +802,8 @@ static PyModuleDef TileweModule =
 
 PyMODINIT_FUNC PyInit_ctilewe(void) 
 {
+    Tw_Init(); 
+
     PyObject* m; 
 
     if (PyType_Ready(&BoardType) < 0) return NULL; 

@@ -331,14 +331,16 @@ class Tournament:
                         player_names = [self.engines[i].name for i in game_players]
                         player_scores = [scores[i] for i in game_players]
                         winner_names = [self.engines[i].name for i in winners]
-                        
-                        # if there are enough players, compute elo changes
+
+                        player_elos = [elos[i] for i in game_players]
                         if board.n_players > 1:
-                            player_elos = [elos[i] for i in game_players]
+                            # if there are enough players, compute elo changes
                             delta_elos = compute_elo_adjustment_n(player_elos, player_scores, K=8)
                             for index, player in enumerate(game_players):
                                 elos[player] += delta_elos[index]
-                            new_elos = [elos[i] for i in game_players]
+                        else:
+                            delta_elos = [0 for _ in game_players]
+                        new_elos = [elos[i] for i in game_players]
 
                         # save match data
                         match_data = MatchData(
