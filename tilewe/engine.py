@@ -250,7 +250,8 @@ class TileWeightEngine(Engine):
             if weight_map not in self.weight_maps:
                 raise Exception("TileWeightEngine given invalid weight_map choice")
             self.weights = self.weight_maps[weight_map]
-            est_elo = self.weight_elos[weight_map] 
+            if estimated_elo is None: 
+                est_elo = self.weight_elos[weight_map] 
 
         super().__init__(name, estimated_elo=est_elo)
 
