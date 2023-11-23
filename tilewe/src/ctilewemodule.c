@@ -381,8 +381,8 @@ static PyGetSetDef Board_getsets[] =
 
 static PyMethodDef Board_methods[] = 
 {
-    { "generate_legal_moves", Board_GenMoves, METH_NOARGS, "Returns a list of legal moves" }, 
-    { "gen_moves", Board_GenMoves, METH_NOARGS, "Returns a list of legal moves" }, 
+    { "generate_legal_moves", Board_GenMoves, METH_VARARGS | METH_KEYWORDS, "Returns a list of legal moves" }, 
+    { "gen_moves", Board_GenMoves, METH_VARARGS | METH_KEYWORDS, "Returns a list of legal moves" }, 
     { "push", Board_Push, METH_VARARGS | METH_KEYWORDS, "Plays a move" }, 
     { "pop", Board_Pop, METH_NOARGS, "Undoes a move" }, 
     { "color_at", Board_ColorAt, METH_VARARGS | METH_KEYWORDS, "Color that claimed the tile" }, 
