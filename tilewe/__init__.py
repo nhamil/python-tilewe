@@ -193,21 +193,6 @@ TILE_NAMES = [
     "a20", "b20", "c20", "d20", "e20", "f20", "g20", "h20", "i20", "j20", "k20", "l20", "m20", "n20", "o20", "p20", "q20", "r20", "s20", "t20"   # noqa: 501
 ]
 
-def tile_to_coords(tile: Tile) -> tuple[int, int]: 
-    return TILE_COORDS[tile]  
-
-def coords_to_tile(coords: tuple[int, int]) -> Tile: 
-    return coords[0] + coords[1] * 20 
-
-def tile_to_index(tile: Tile) -> int: 
-    return tile
-
-def out_of_bounds(coords: tuple[int, int]) -> int:
-    return not (0 <= coords[0] < 20 and 0 <= coords[1] < 20)
-
-def in_bounds(coords: tuple[int, int]) -> bool:
-    return 0 <= coords[0] < 20 and 0 <= coords[1] < 20
-
 ROTATIONS = [
     NORTH, EAST, SOUTH, WEST, NORTH_F, EAST_F, SOUTH_F, WEST_F
 ] = [Rotation(x) for x in range(8)]

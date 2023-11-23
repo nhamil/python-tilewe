@@ -440,6 +440,30 @@ static bool TileArgHandler(PyObject* args, PyObject* kwds, Tw_Tile* tile)
     return true;
 }
 
+static bool CoordsArgHandler(PyObject* args, PyObject* kwds, int vals[2]) 
+{
+    static const char* kwlist[] = 
+    {
+        "coords", 
+        NULL
+    };
+
+    vals[0] = vals[1] = 0; 
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "(ii)", kwlist, vals, vals + 1)) 
+    {
+        return false;
+    }
+
+    if (!Tw_CoordsInBounds(vals[0], vals[1])) 
+    {
+        PyErr_SetString(PyExc_AttributeError, "coords must be in bounds"); 
+        return false;
+    }
+
+    return true;
+}
+
 static PyObject* Tilewe_TileToCoords(PyObject* self, PyObject* args, PyObject* kwds) 
 {
     Tw_Tile tile; 
@@ -452,6 +476,17 @@ static PyObject* Tilewe_TileToCoords(PyObject* self, PyObject* args, PyObject* k
     Tw_Tile_ToCoords(tile, &x, &y); 
 
     return Py_BuildValue("ii", x, y); 
+}
+
+static PyObject* Tilewe_CoordsToTile(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    int vals[2]; 
+    if (!CoordsArgHandler(args, kwds, vals)) 
+    {
+        return NULL;
+    }
+    
+    return Py_BuildValue("i", Tw_MakeTile(vals[0], vals[1])); 
 }
 
 static PyObject* Tilewe_PlayRandomGame(PyObject* self, PyObject* args) 
@@ -476,6 +511,7 @@ static PyMethodDef TileweMethods[] =
 {
     { "play_random_game", Tilewe_PlayRandomGame, METH_NOARGS, "Plays a random game" }, 
     { "tile_to_coords", Tilewe_TileToCoords, METH_VARARGS | METH_KEYWORDS, "Get x,y coordinates of a tile" }, 
+    { "coords_to_tile", Tilewe_CoordsToTile, METH_VARARGS | METH_KEYWORDS, "Get tile from x,y coordinates" }, 
     { NULL, NULL, 0, NULL }
 };
 
