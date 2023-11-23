@@ -527,6 +527,38 @@ static bool PcRotArgHandler(PyObject* args, PyObject* kwds, bool checkBounds, Tw
     return true;
 }
 
+static bool MoveArgHandler(PyObject* args, PyObject* kwds, bool checkBounds, Tw_Move* move) 
+{
+    static const char* kwlist[] = 
+    {
+        "move", 
+        NULL
+    };
+
+    *move = Tw_NoMove; 
+
+    unsigned moveValue; 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "I", kwlist, &moveValue)) 
+    {
+        return false;
+    }
+
+    Tw_Move tmp = *move = (Tw_Move) moveValue; 
+
+    if (checkBounds && (tmp == Tw_NoMove || tmp != Tw_MakeMove_Safe(
+        Tw_Move_Pc(tmp), 
+        Tw_Move_Rot(tmp), 
+        Tw_Move_Con(tmp), 
+        Tw_Move_ToTile(tmp) 
+    ))) 
+    {
+        PyErr_SetString(PyExc_AttributeError, "move must be valid"); 
+        return false;
+    }
+
+    return true;
+}
+
 static PyObject* Tilewe_TileToCoords(PyObject* self, PyObject* args, PyObject* kwds) 
 {
     Tw_Tile tile; 
@@ -645,6 +677,52 @@ static PyObject* Tilewe_PcContacts(PyObject* self, PyObject* args, PyObject* kwd
     return list; 
 }
 
+static PyObject* Tilewe_MovePc(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Move move; 
+    if (!MoveArgHandler(args, kwds, true, &move)) 
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(Tw_Move_Pc(move)); 
+}
+
+static PyObject* Tilewe_MoveRot(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Move move; 
+    if (!MoveArgHandler(args, kwds, true, &move)) 
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(Tw_Move_Rot(move)); 
+}
+
+
+static PyObject* Tilewe_MoveCon(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Move move; 
+    if (!MoveArgHandler(args, kwds, true, &move)) 
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(Tw_Move_Con(move)); 
+}
+
+
+static PyObject* Tilewe_MoveTile(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Move move; 
+    if (!MoveArgHandler(args, kwds, true, &move)) 
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(Tw_Move_ToTile(move)); 
+}
+
 static PyObject* Tilewe_PlayRandomGame(PyObject* self, PyObject* args) 
 {
     Tw_Board board[1]; 
@@ -675,6 +753,10 @@ static PyMethodDef TileweMethods[] =
     { "n_piece_corners", Tilewe_NumPcCorners, METH_VARARGS | METH_KEYWORDS, "Gets number of corners in a piece" }, 
     { "piece_tiles", Tilewe_PcTiles, METH_VARARGS | METH_KEYWORDS, "Gets tiles in a rotated piece" }, 
     { "piece_contacts", Tilewe_PcContacts, METH_VARARGS | METH_KEYWORDS, "Gets contacts in a rotated piece" }, 
+    { "move_piece", Tilewe_MovePc, METH_VARARGS | METH_KEYWORDS, "Gets the piece used in a move" }, 
+    { "move_rotation", Tilewe_MoveRot, METH_VARARGS | METH_KEYWORDS, "Gets the piece rotation used in a move" }, 
+    { "move_contact", Tilewe_MoveCon, METH_VARARGS | METH_KEYWORDS, "Gets the contact tile used in a move" }, 
+    { "move_tile", Tilewe_MoveTile, METH_VARARGS | METH_KEYWORDS, "Gets the open corner used in a move" }, 
     { NULL, NULL, 0, NULL }
 };
 
