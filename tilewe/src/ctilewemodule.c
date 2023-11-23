@@ -15,7 +15,7 @@ struct BoardObject
 
 static int Board_init(BoardObject* self, PyObject* args, PyObject* kwds) 
 {
-    static char* kwlist[] = { "n_players", NULL }; 
+    static const char* kwlist[] = { "n_players", NULL }; 
 
     int numPlayers = 4; 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|i", kwlist, &numPlayers)) 
@@ -131,7 +131,7 @@ static PyObject* Board_GenMoves(BoardObject* self, PyObject* Py_UNUSED(ignored))
 
 static PyObject* Board_Push(BoardObject* self, PyObject* args, PyObject* kwds) 
 {
-    static char* kwlist[] = 
+    static const char* kwlist[] = 
     {
         "move", 
         NULL
@@ -151,7 +151,7 @@ static PyObject* Board_Push(BoardObject* self, PyObject* args, PyObject* kwds)
 
 static PyObject* Board_ColorAt(BoardObject* self, PyObject* args, PyObject* kwds) 
 {
-    static char* kwlist[] = 
+    static const char* kwlist[] = 
     {
         "tile", 
         NULL
@@ -169,7 +169,7 @@ static PyObject* Board_ColorAt(BoardObject* self, PyObject* args, PyObject* kwds
 
 static bool ForPlayerArgHandler(BoardObject* self, PyObject* args, PyObject* kwds, int* player) 
 {
-    static char* kwlist[] = 
+    static const char* kwlist[] = 
     {
         "for_player", 
         NULL
@@ -201,7 +201,7 @@ static bool ForPlayerArgHandler(BoardObject* self, PyObject* args, PyObject* kwd
 // TODO use better way that doesn't duplicate so much code 
 static bool ForPlayerAndMoveArgHandler(BoardObject* self, PyObject* args, PyObject* kwds, unsigned* move, int* player) 
 {
-    static char* kwlist[] = 
+    static const char* kwlist[] = 
     {
         "move", 
         "for_player", 
