@@ -173,7 +173,7 @@ class TournamentResults:
 
         out = f"Ranking by {sort_by} {sort_dir}:\n"
         out += f"{'Rank':4} {'Name':{len_names}} {'Elo':^{len_elo + 9}} {'Score':>{len_score}} {'Avg Score':>10} "
-        out += f"{'Games':>{len_games}} {'Wins':>{len_games}} {'Draws':>{len_games}} {'Losses':>{len_games}} {'Win Rate':>8}\n"
+        out += f"{'Games':>{len_games}} {'Wins':>{len_games}} {'Draws':>{len_games}} {'Losses':>{len_games}} {'Win Rate':>9}\n"
 
         dir = -1 if sort_dir == 'desc' else 1
 
@@ -183,7 +183,7 @@ class TournamentResults:
             losses, score, elo = games - wins - draws, self.total_scores[engine], self.elo_end[engine]
             elo_margin = compute_elo_error_margin(wins, draws, losses)
 
-            win_rate = f"{(wins / games * 100):>7.2f}%" if games > 0 else f"{'-':>8}"
+            win_rate = f"{(wins / games * 100):>8.2f}%" if games > 0 else f"{'-':>9}"
             avg_score = f"{(score / games):>10.2f}" if games > 0 else f"{'-':>10}"
             elo_range = f"{elo:>{len_elo}.0f} +/- {elo_margin:<4.0f}"
 
@@ -299,7 +299,7 @@ class Tournament:
 
             out = f"\n{'Rank':4} {'Name':{len_name}} {'Elo':^{len_elo + 9}} {'Score':>{len_score}} {'Avg Score':>10} "
             out += f"{'Games':>{len_games}} {'Wins':>{len_games}} {'Draws':>{len_games}} "
-            out += f"{'Losses':>{len_games}} {'Win Rate':>8}\n"
+            out += f"{'Losses':>{len_games}} {'Win Rate':>9}\n"
 
             for rank, engine in enumerate(sorted(range(N), key=lambda x: -elos[x])):
                 name = self.engines[engine].name
@@ -307,7 +307,7 @@ class Tournament:
                 loss_count, score, elo = game_count - win_count - draw_count, totals[engine], elos[engine]
                 elo_margin = compute_elo_error_margin(win_count, draw_count, loss_count)
                 
-                win_rate = f"{(win_count / game_count * 100):>7.2f}%" if game_count > 0 else f"{'-':>8}"
+                win_rate = f"{(win_count / game_count * 100):>8.2f}%" if game_count > 0 else f"{'-':>9}"
                 avg_score = f"{(score / game_count):>10.2f}" if game_count > 0 else f"{'-':>10}"
                 elo_range = f"{elo:>{len_elo}.0f} +/- {elo_margin:<4.0f}"
 
