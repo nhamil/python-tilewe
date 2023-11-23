@@ -210,7 +210,7 @@ static bool ForPlayerAndMoveArgHandler(BoardObject* self, PyObject* args, PyObje
 
     *player = Tw_Color_None; 
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|Ii", kwlist, move, player)) 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "I|i", kwlist, move, player)) 
     {
         *move = (unsigned) Tw_NoMove; 
         *player = -1; 
