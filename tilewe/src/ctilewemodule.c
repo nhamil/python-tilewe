@@ -464,6 +464,33 @@ static bool CoordsArgHandler(PyObject* args, PyObject* kwds, bool checkBounds, i
     return true;
 }
 
+static bool PcArgHandler(PyObject* args, PyObject* kwds, bool checkBounds, Tw_Pc* pc) 
+{
+    static const char* kwlist[] = 
+    {
+        "piece", 
+        NULL
+    };
+
+    *pc = Tw_Pc_None; 
+
+    unsigned pcValue; 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "I", kwlist, &pcValue)) 
+    {
+        return false;
+    }
+
+    *pc = (Tw_Pc) pcValue; 
+
+    if (checkBounds && !Tw_Tile_InBounds(*pc)) 
+    {
+        PyErr_SetString(PyExc_AttributeError, "piece must be valid"); 
+        return false;
+    }
+
+    return true;
+}
+
 static PyObject* Tilewe_TileToCoords(PyObject* self, PyObject* args, PyObject* kwds) 
 {
     Tw_Tile tile; 
@@ -511,6 +538,39 @@ static PyObject* Tilewe_CoordsInBounds(PyObject* self, PyObject* args, PyObject*
     return PyBool_FromLong(Tw_CoordsInBounds(vals[0], vals[1])); 
 }
 
+static PyObject* Tilewe_NumPcContacts(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Pc pc; 
+    if (!PcArgHandler(args, kwds, true, &pc)) 
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(Tw_TileSet_Count(&Tw_RotPcInfos[Tw_ToRotPc(pc, Tw_Rot_N)].Contacts)); 
+}
+
+static PyObject* Tilewe_NumPcTiles(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Pc pc; 
+    if (!PcArgHandler(args, kwds, true, &pc)) 
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(Tw_TileSet_Count(&Tw_RotPcInfos[Tw_ToRotPc(pc, Tw_Rot_N)].Tiles)); 
+}
+
+static PyObject* Tilewe_NumPcCorners(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Pc pc; 
+    if (!PcArgHandler(args, kwds, true, &pc)) 
+    {
+        return NULL;
+    }
+
+    return PyLong_FromLong(Tw_TileSet_Count(&Tw_RotPcInfos[Tw_ToRotPc(pc, Tw_Rot_N)].RelCorners)); 
+}
+
 static PyObject* Tilewe_PlayRandomGame(PyObject* self, PyObject* args) 
 {
     Tw_Board board[1]; 
@@ -536,6 +596,9 @@ static PyMethodDef TileweMethods[] =
     { "tile_in_bounds", Tilewe_TileInBounds, METH_VARARGS | METH_KEYWORDS, "Checks if tile is in bounds" }, 
     { "coords_to_tile", Tilewe_CoordsToTile, METH_VARARGS | METH_KEYWORDS, "Get tile from x,y coordinates" }, 
     { "coords_in_bounds", Tilewe_CoordsInBounds, METH_VARARGS | METH_KEYWORDS, "Checks if coords are in bounds" }, 
+    { "n_piece_tiles", Tilewe_NumPcTiles, METH_VARARGS | METH_KEYWORDS, "Gets number of tiles in a piece" }, 
+    { "n_piece_contacts", Tilewe_NumPcContacts, METH_VARARGS | METH_KEYWORDS, "Gets number of contacts in a piece" }, 
+    { "n_piece_corners", Tilewe_NumPcCorners, METH_VARARGS | METH_KEYWORDS, "Gets number of corners in a piece" }, 
     { NULL, NULL, 0, NULL }
 };
 
@@ -550,6 +613,8 @@ static PyModuleDef TileweModule =
 
 PyMODINIT_FUNC PyInit_ctilewe(void) 
 {
+    Tw_Init(); 
+
     PyObject* m; 
 
     if (PyType_Ready(&BoardType) < 0) return NULL; 
