@@ -249,3 +249,8 @@ PIECE_NAMES = [
 ]
 
 from ctilewe import *  # noqa: E402, F401, F403
+
+PIECE_TILES:    list[int] = [n_piece_tiles(piece)    for piece in range(NO_PIECE)]
+PIECE_CORNERS:  list[int] = [n_piece_corners(piece)  for piece in range(NO_PIECE)]
+PIECE_CONTACTS: list[int] = [n_piece_contacts(piece) for piece in range(NO_PIECE)]
+

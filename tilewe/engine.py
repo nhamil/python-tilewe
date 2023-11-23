@@ -110,11 +110,15 @@ class LargestPieceEngine(Engine):
         Piece that has the most contacts
     Moderately strong from a greedy point hungry perspective. Since
     ties are common and result in a random move choice across the
-    ties, it's effectively a greedy form of RandomEngine.
+    ties, it's effectively a greedy form of RandomEngine. With the
+    inverse argument set, it becomes a SmallestPieceEngine.
     """
 
-    def __init__(self, name: str="LargestPiece", estimated_elo: float=None):
-        super().__init__(name, 30.0 if estimated_elo is None else estimated_elo)
+    def __init__(self, name: str="LargestPiece", inverse: bool=False, estimated_elo: float=None):
+        if estimated_elo is None:
+            estimated_elo = -120.0 if inverse else 30.0
+        super().__init__(name, estimated_elo)
+        self.mult = -1 if inverse else 1
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
         moves = board.generate_legal_moves() 
@@ -122,9 +126,9 @@ class LargestPieceEngine(Engine):
 
         def score(m: tilewe.Move): 
             pc = tilewe.move_piece(m) 
-            return tilewe.n_piece_tiles(pc) * 100 + \
-                tilewe.n_piece_corners(pc) * 10 + \
-                tilewe.n_piece_contacts(pc) 
+            return self.mult * (tilewe.PIECE_TILES[pc] * 100 + 
+                tilewe.PIECE_CORNERS[pc] * 10 + 
+                tilewe.PIECE_CONTACTS[pc])
 
         best = max(moves, key=score)
         
