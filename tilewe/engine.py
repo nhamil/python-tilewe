@@ -72,8 +72,8 @@ class RandomEngine(Engine):
     Pretty bad, but makes moves really fast.
     """
 
-    def __init__(self, name: str="Random"): 
-        super().__init__(name, -100.0)
+    def __init__(self, name: str="Random", estimated_elo: float=None): 
+        super().__init__(name, -100.0 if estimated_elo is None else estimated_elo)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move: 
         return random.choice(board.generate_legal_moves()) 
@@ -86,8 +86,8 @@ class MostOpenCornersEngine(Engine):
     Fairly weak but does result in decent board coverage behavior.
     """
 
-    def __init__(self, name: str="MostOpenCorners"):
-        super().__init__(name, 15.0)
+    def __init__(self, name: str="MostOpenCorners", estimated_elo: float=None):
+        super().__init__(name, 15.0 if estimated_elo is None else estimated_elo)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
         moves = board.generate_legal_moves() 
@@ -113,8 +113,8 @@ class LargestPieceEngine(Engine):
     ties, it's effectively a greedy form of RandomEngine.
     """
 
-    def __init__(self, name: str="LargestPiece"):
-        super().__init__(name, 30.0)
+    def __init__(self, name: str="LargestPiece", estimated_elo: float=None):
+        super().__init__(name, 30.0 if estimated_elo is None else estimated_elo)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
         moves = board.generate_legal_moves() 
@@ -138,8 +138,8 @@ class MaximizeMoveDifferenceEngine(Engine):
     getting access to an open area on the board, etc.
     """
 
-    def __init__(self, name: str="MaximizeMoveDifference"):
-        super().__init__(name, 50.0)
+    def __init__(self, name: str="MaximizeMoveDifference", estimated_elo: float=None):
+        super().__init__(name, 50.0 if estimated_elo is None else estimated_elo)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
         moves = board.generate_legal_moves() 
@@ -221,13 +221,13 @@ class TileWeightEngine(Engine):
         'turtle': TURTLE_WEIGHTS
     }
 
-    def __init__(self, name: str="TileWeight", weight_map: str='wall_crawl', custom_weights: list[int | float]=None): 
+    def __init__(self, name: str="TileWeight", weight_map: str='wall_crawl', custom_weights: list[int | float]=None, estimated_elo: float=None): 
         """
         Current `weight_map` built-in options are 'wall_crawl' and 'turtle'
         Can optionally provide a custom set of weights instead
         """
 
-        super().__init__(name)
+        super().__init__(name, 0.0 if estimated_elo is None else estimated_elo)
 
         if custom_weights is not None:
             if len(custom_weights) != 20 * 20:
