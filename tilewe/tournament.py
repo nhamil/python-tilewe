@@ -144,8 +144,8 @@ class TournamentResults:
             self.win_counts[engine], 
             self.draw_counts[engine], 
             self.lose_counts[engine],
-            confidence,
-            C
+            max(0.001, min(0.999, confidence)),
+            max(1, C)
         )
 
     def get_engine_rankings_display(self, sort_by: str = 'elo_end', sort_dir: str = 'desc') -> str:

@@ -150,6 +150,11 @@ def compute_elo_error_margin(wins: int, draws: int, losses: int, confidence: flo
     error_margin : float
         The Elo error margin
     """
+
+    if confidence <= 0 or confidence >= 1:
+        raise ValueError(f"confidence must be between 0 and 1 (exclusive), got {confidence}")
+    if C < 1:
+        raise ValueError(f"C must be greater than or equal to 1, got {C}")
     
     total: int = wins + draws + losses
     if total == 0:
