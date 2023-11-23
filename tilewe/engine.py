@@ -120,10 +120,13 @@ class LargestPieceEngine(Engine):
         moves = board.generate_legal_moves() 
         random.shuffle(moves) 
 
-        best = max(moves, key=lambda m:
-            tilewe.n_piece_tiles(m.piece) * 100 +
-            tilewe.n_piece_corners(m.piece) * 10 +
-            tilewe.n_piece_contacts(m.piece))
+        def score(m: tilewe.Move): 
+            pc = tilewe.move_piece(m) 
+            return tilewe.n_piece_tiles(pc) * 100 + \
+                tilewe.n_piece_corners(pc) * 10 + \
+                tilewe.n_piece_contacts(pc) 
+
+        best = max(moves, key=score)
         
         return best
 
@@ -244,12 +247,11 @@ class TileWeightEngine(Engine):
         cur_player = board.current_player
 
         def evaluate_move_weight(move: tilewe.Move) -> float: 
-            total: float = 0.0
+            total: float = 0
 
-            to_coords = tilewe.tile_to_coords(move.to_tile) 
-            for coords in tilewe.piece_tile_coords(move.piece, move.rotation, move.contact): 
-                coords = (coords[0] + to_coords[0], coords[1] + to_coords[1])
-                total += self.weights[tilewe.coords_to_tile(coords)]
+            offset = tilewe.move_tile(move) - tilewe.move_contact(move) 
+            for tile in tilewe.piece_tiles(tilewe.move_piece(move), tilewe.move_rotation(move)): 
+                total += self.weights[tile + offset]
 
             return total
 
@@ -259,6 +261,6 @@ class TileWeightEngine(Engine):
         if board.ply < board.n_players:
             #  prune to one corner to reduce moves to evaluate
             corner = board.player_corners(cur_player)[0]
-            moves = [i for i in moves if i.to_tile == corner]
+            moves = [i for i in moves if tilewe.move_tile(i) == corner]
 
         return max(moves, key=evaluate_move_weight)
