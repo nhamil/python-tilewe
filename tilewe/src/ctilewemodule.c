@@ -220,7 +220,7 @@ static PyObject* Board_NumPlayerPcs(BoardObject* self, PyObject* args, PyObject*
     return PyLong_FromLong(Tw_Board_NumPlayerPcs(&self->Board, (Tw_Color) player)); 
 }
 
-static PyObject* Board_PlayerOpenCorners(BoardObject* self, PyObject* args, PyObject* kwds) 
+static PyObject* Board_PlayerCorners(BoardObject* self, PyObject* args, PyObject* kwds) 
 {
     int player;
     if (!ForPlayerArgHandler(self, args, kwds, &player))
@@ -228,30 +228,25 @@ static PyObject* Board_PlayerOpenCorners(BoardObject* self, PyObject* args, PyOb
         return NULL;
     }
 
-    // count the open corners
-    Py_ssize_t openCorners = 0;
-    Tw_TileSet_FOR_EACH(self->Board.Players[player].OpenCorners.Keys, tile, 
-    {
-        openCorners++;
-    });
+    // get a list of the player's open corners
+    Tw_TileList openCorners;
+    Tw_InitTileList(&openCorners);
+    Tw_Board_PlayerCorners(&self->Board, player, &openCorners);
 
     // build Python list of the open corner tiles
-    PyObject* list = PyList_New(openCorners); 
-    Py_ssize_t cornerIndex = 0;
-    Tw_TileSet_FOR_EACH(self->Board.Players[player].OpenCorners.Keys, tile, 
-    {
+    PyObject* list = PyList_New(openCorners.Count); 
+    for (int i = 0; i < openCorners.Count; i++) {
         PyList_SetItem(
             list, 
-            cornerIndex, 
-            PyLong_FromUnsignedLong((unsigned long) tile)
+            i, 
+            PyLong_FromUnsignedLong((unsigned long) openCorners.Elements[i])
         ); 
-        cornerIndex++;
-    });
+    }
 
     return list; 
 }
 
-static PyObject* Board_NumPlayerOpenCorners(BoardObject* self, PyObject* args, PyObject* kwds) 
+static PyObject* Board_NumPlayerCorners(BoardObject* self, PyObject* args, PyObject* kwds) 
 {
     int player;
     if (!ForPlayerArgHandler(self, args, kwds, &player))
@@ -259,13 +254,7 @@ static PyObject* Board_NumPlayerOpenCorners(BoardObject* self, PyObject* args, P
         return NULL;
     }
 
-    long openCorners = 0;
-    Tw_TileSet_FOR_EACH(self->Board.Players[player].OpenCorners.Keys, tile, 
-    {
-        openCorners++;
-    });
-
-    return PyLong_FromLong(openCorners); 
+    return PyLong_FromLong(Tw_Board_NumPlayerCorners(&self->Board, player)); 
 }
 
 static PyObject* Board_Pop(BoardObject* self, PyObject* Py_UNUSED(ignored)) 
@@ -322,8 +311,8 @@ static PyMethodDef Board_methods[] =
     { "color_at", Board_ColorAt, METH_VARARGS | METH_KEYWORDS, "Color that claimed the tile" }, 
     { "n_legal_moves", Board_NumLegalMoves, METH_VARARGS | METH_KEYWORDS, "Gets total number of legal moves for a player" }, 
     { "n_remaining_pieces", Board_NumPlayerPcs, METH_VARARGS | METH_KEYWORDS, "Gets total number of pieces remaining for a player" }, 
-    { "n_player_corners", Board_NumPlayerOpenCorners, METH_VARARGS | METH_KEYWORDS, "Gets total number of open corners for a player" }, 
-    { "player_corners", Board_PlayerOpenCorners, METH_VARARGS | METH_KEYWORDS, "Gets a list of the open corners for a player" }, 
+    { "n_player_corners", Board_NumPlayerCorners, METH_VARARGS | METH_KEYWORDS, "Gets total number of open corners for a player" }, 
+    { "player_corners", Board_PlayerCorners, METH_VARARGS | METH_KEYWORDS, "Gets a list of the open corners for a player" }, 
     // { "copy", Board_Copy, METH_NOARGS, "Returns a clone of the current board state" }, 
     { NULL }
 };
