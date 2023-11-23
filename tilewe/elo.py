@@ -188,3 +188,68 @@ def compute_elo_error_margin(wins: int, draws: int, losses: int, confidence: flo
     max_log: float = -C * math.log10(max_recip - 1)
 
     return abs((max_log - min_log) / 2)
+
+def compute_estimated_elo(n: int, ppg: list[list[int]], rpg: list[list[float]], mean: float=0) -> list[float]: 
+    """
+    Computes Elo given a list of game players and results. Results should be: 
+    - 1 for a win
+    - 0 for a loss
+    - 1/2 for a draw
+
+    Parameters
+    ----------
+    n : int 
+        Total number of players 
+    ppg : list[list[int]] 
+        List of player indices for each game 
+    rpg : list[list[float]] 
+        List of player results for each game 
+    mean : float 
+        What the average rating should be
+
+    Returns
+    -------
+    Estimated Elo rating for all players 
+    """
+
+    def expected_elo(results: list[float]) -> float: 
+        wr = sum(results) / len(results) 
+
+        if wr >= 1: 
+            return math.inf 
+        elif wr <= 0: 
+            return -math.inf 
+        else: 
+            # calculates total difference between the player and one virtual opponent
+            # the opponent will also have their elo adjusted so only return half of it
+            return -400 * math.log10(1.0 / wr - 1) / 2
+
+    elos = []
+    games = len(ppg)
+
+    # results per player 
+    rpp = [[] for _ in range(n)]
+
+    # game indices per player 
+    gpp = [[] for _ in range(n)]
+
+    for p in range(n): 
+        for g in range(games): 
+            if p in ppg[g]: 
+                # player played in game g
+                gpp[p].append(g) 
+                # player had result in game g
+                rpp[p].append(rpg[g][ppg[g].index(p)])
+
+    for p in range(n): 
+        # update elo 
+        elos.append(expected_elo(rpp[p]))
+
+    # adjust ratings to prevent drift
+    finite_e = [e for e in elos if math.isfinite(e)]
+    if len(finite_e): 
+        avg = sum(finite_e) / len(finite_e) 
+        for i in range(n): 
+            elos[i] += mean - avg
+
+    return elos 
