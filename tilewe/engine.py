@@ -224,13 +224,22 @@ class TileWeightEngine(Engine):
         'turtle': TURTLE_WEIGHTS
     }
 
-    def __init__(self, name: str="TileWeight", weight_map: str='wall_crawl', custom_weights: list[int | float]=None, estimated_elo: float=None): 
+    weight_elos = {
+        'wall_crawl': -10.0,
+        'turtle': -40.0
+    }
+
+    def __init__(self, 
+                 name: str="TileWeight", 
+                 weight_map: str='wall_crawl', 
+                 custom_weights: list[int | float]=None, 
+                 estimated_elo: float=None): 
         """
         Current `weight_map` built-in options are 'wall_crawl' and 'turtle'
         Can optionally provide a custom set of weights instead
         """
 
-        super().__init__(name, 0.0 if estimated_elo is None else estimated_elo)
+        est_elo: float = 0.0 if estimated_elo is None else estimated_elo
 
         if custom_weights is not None:
             if len(custom_weights) != 20 * 20:
@@ -241,6 +250,9 @@ class TileWeightEngine(Engine):
             if weight_map not in self.weight_maps:
                 raise Exception("TileWeightEngine given invalid weight_map choice")
             self.weights = self.weight_maps[weight_map]
+            est_elo = self.weight_elos[weight_map] 
+
+        super().__init__(name, estimated_elo=est_elo)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move: 
 
