@@ -9,7 +9,7 @@ import math
 
 import tilewe 
 from tilewe.engine import Engine
-from tilewe.elo import compute_elo_adjustment_n
+from tilewe.elo import compute_elo_adjustment_n, compute_elo_error_margin
 
 @dataclass
 class MatchData:
@@ -120,12 +120,34 @@ class TournamentResults:
         return [self.elo_end[i] - self.elo_start[i] for i in range(self.total_engines)]
 
     @property
+    def elo_error_margin(self) -> list[float]:
+        # with default 95% confidence and C=400
+        return [
+            compute_elo_error_margin(
+                self.win_counts[i], 
+                self.draw_counts[i], 
+                self.lose_counts[i]
+            ) for i in range(self.total_engines)
+        ]
+
+    @property
     def average_match_duration(self) -> float:
         return self.total_time / max(1, self.total_games)
     
     def get_matches_by_engine(self, engine: int) -> list[MatchData]:
+        # filter the matches for those involving this engine
         return [x for x in self.match_data if engine in x.engines]
-    
+
+    def get_elo_error_margin(self, engine: int, confidence: float=0.95, C: int=400) -> float:
+        # supports custom confidence and C values
+        return compute_elo_error_margin(
+            self.win_counts[engine], 
+            self.draw_counts[engine], 
+            self.lose_counts[engine],
+            max(0.001, min(0.999, confidence)),
+            max(1, C)
+        )
+
     def get_engine_rankings_display(self, sort_by: str = 'elo_end', sort_dir: str = 'desc') -> str:
         # verify the given sort property exists
         if not hasattr(self, sort_by):
@@ -147,10 +169,11 @@ class TournamentResults:
         len_names = max(5, min(24, max([len(x) for x in self.engine_names]) + 1))
         len_score = max(6, max([math.floor(math.log10(max(1, self.total_scores[i])) + 1) for i in range(N)]) + 1)
         len_games = max(7, max([math.floor(math.log10(max(1, self.game_counts[i])) + 1) for i in range(N)]) + 1)
+        len_elo = max(4, max([math.floor(math.log10(max(1, abs(self.elo_end[i]))) + 1) for i in range(N)]) + 1)
 
         out = f"Ranking by {sort_by} {sort_dir}:\n"
-        out += f"{'Rank':4} {'Name':{len_names}} {'Elo':>5} {'Score':>{len_score}} {'Avg Score':>10} {'Games':>{len_games}} "
-        out += f"{'Wins':>{len_games}} {'Draws':>{len_games}} {'Losses':>{len_games}} {'Win %':>7}\n"
+        out += f"{'Rank':4} {'Name':{len_names}} {'Elo':^{len_elo + 9}} {'Score':>{len_score}} {'Avg Score':>10} "
+        out += f"{'Games':>{len_games}} {'Wins':>{len_games}} {'Draws':>{len_games}} {'Losses':>{len_games}} {'Win Rate':>9}\n"
 
         dir = -1 if sort_dir == 'desc' else 1
 
@@ -158,11 +181,13 @@ class TournamentResults:
             name = self.engine_names[engine]
             draws, wins, games = self.draw_counts[engine], self.win_counts[engine], self.game_counts[engine]
             losses, score, elo = games - wins - draws, self.total_scores[engine], self.elo_end[engine]
+            elo_margin = compute_elo_error_margin(wins, draws, losses)
 
-            win_rate = f"{(wins / games * 100):>6.2f}%" if games > 0 else f"{'-':>7}"
+            win_rate = f"{(wins / games * 100):>8.2f}%" if games > 0 else f"{'-':>9}"
             avg_score = f"{(score / games):>10.2f}" if games > 0 else f"{'-':>10}"
+            elo_range = f"{elo:>{len_elo}.0f} +/- {elo_margin:<4.0f}"
 
-            out += f"{rank:>4d} {name:{len_names}.{len_names}} {elo:>5.0f} {score:>{len_score}d} {avg_score} "
+            out += f"{rank:>4d} {name:{len_names}.{len_names}} {elo_range} {score:>{len_score}d} {avg_score} "
             out += f"{games:>{len_games}d} {wins:>{len_games}d} {draws:>{len_games}d} {losses:>{len_games}d} {win_rate}\n"
 
         return out
@@ -214,7 +239,8 @@ class Tournament:
         players_per_game: int=4,
         move_seconds: int=None,
         verbose_board: bool=False,
-        verbose_rankings: bool=True
+        verbose_rankings: bool=True,
+        use_starting_elos: bool=False,
     ):
         """
         Used to launch a series of games in an initialized Tournament.
@@ -233,6 +259,8 @@ class Tournament:
             Whether or not to print the final board state of each match
         verbose_rankings : bool=True
             Whether or not to print periodic ranking updates and the final rankings at the end
+        use_starting_elos : bool=False
+            Whether or not to initialize engines with their self proposed estimated Elo, otherwise 0
         """
 
         if n_games <= 0:
@@ -249,11 +277,15 @@ class Tournament:
         # initialize trackers and game controls
         N = len(self.engines)
         total_games = 0
-        draws = [0 for _ in range(N)]
-        wins = [0 for _ in range(N)]
-        games = [0 for _ in range(N)]
-        elos = [0 for _ in range(N)]
-        totals = [0 for _ in range(N)]
+        draws = [0] * N
+        wins = [0] * N
+        games = [0] * N
+        totals = [0] * N
+        
+        if use_starting_elos:
+            elos = [0 if self.engines[i].estimated_elo is None else self.engines[i].estimated_elo for i in range(N)]
+        else:
+            elos = [0] * N
 
         initial_elos = [i for i in elos]
         match_results: list[MatchData] = []
@@ -263,20 +295,23 @@ class Tournament:
             len_name = max(5, min(24, max([len(x.name) for x in self.engines]) + 1))
             len_score = max(6, max([math.floor(math.log10(max(1, totals[i])) + 1) for i in range(N)]) + 1)
             len_games = max(7, max([math.floor(math.log10(max(1, games[i])) + 1) for i in range(N)]) + 1)
+            len_elo = max(4, max([math.floor(math.log10(max(1, abs(elos[i]))) + 1) for i in range(N)]) + 1)
 
-            out = f"\n{'Rank':4} {'Name':{len_name}} {'Elo':>5} {'Score':>{len_score}} {'Avg Score':>10} "
+            out = f"\n{'Rank':4} {'Name':{len_name}} {'Elo':^{len_elo + 9}} {'Score':>{len_score}} {'Avg Score':>10} "
             out += f"{'Games':>{len_games}} {'Wins':>{len_games}} {'Draws':>{len_games}} "
-            out += f"{'Losses':>{len_games}} {'Win %':>7}\n"
+            out += f"{'Losses':>{len_games}} {'Win Rate':>9}\n"
 
             for rank, engine in enumerate(sorted(range(N), key=lambda x: -elos[x])):
                 name = self.engines[engine].name
                 draw_count, win_count, game_count = draws[engine], wins[engine], games[engine]
                 loss_count, score, elo = game_count - win_count - draw_count, totals[engine], elos[engine]
+                elo_margin = compute_elo_error_margin(win_count, draw_count, loss_count)
                 
-                win_rate = f"{(win_count / game_count * 100):>6.2f}%" if game_count > 0 else f"{'-':>7}"
+                win_rate = f"{(win_count / game_count * 100):>8.2f}%" if game_count > 0 else f"{'-':>9}"
                 avg_score = f"{(score / game_count):>10.2f}" if game_count > 0 else f"{'-':>10}"
+                elo_range = f"{elo:>{len_elo}.0f} +/- {elo_margin:<4.0f}"
 
-                out += f"{rank:>4d} {name:{len_name}.{len_name}} {elo:>5.0f} {score:>{len_score}d} "
+                out += f"{rank:>4d} {name:{len_name}.{len_name}} {elo_range} {score:>{len_score}d} "
                 out += f"{avg_score} {game_count:>{len_games}d} {win_count:>{len_games}d} "
                 out += f"{draw_count:>{len_games}d} {loss_count:>{len_games}d} {win_rate}\n"
 
