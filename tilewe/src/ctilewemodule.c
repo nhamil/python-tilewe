@@ -491,6 +491,42 @@ static bool PcArgHandler(PyObject* args, PyObject* kwds, bool checkBounds, Tw_Pc
     return true;
 }
 
+static bool PcRotArgHandler(PyObject* args, PyObject* kwds, bool checkBounds, Tw_Pc* pc, Tw_Rot* rot) 
+{
+    static const char* kwlist[] = 
+    {
+        "piece", 
+        "rotation", 
+        NULL
+    };
+
+    *pc = Tw_Pc_None; 
+    *rot = Tw_Rot_N; 
+
+    unsigned pcValue, rotValue; 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "II", kwlist, &pcValue, &rotValue)) 
+    {
+        return false;
+    }
+
+    *pc = (Tw_Pc) pcValue; 
+    *rot = (Tw_Rot) rotValue; 
+
+    if (checkBounds && !Tw_Tile_InBounds(*pc)) 
+    {
+        PyErr_SetString(PyExc_AttributeError, "piece must be valid"); 
+        return false;
+    }
+
+    if (checkBounds && (*rot < 0 || *rot >= Tw_NumRots))
+    {
+        PyErr_SetString(PyExc_AttributeError, "rotation must be valid"); 
+        return false;
+    }
+
+    return true;
+}
+
 static PyObject* Tilewe_TileToCoords(PyObject* self, PyObject* args, PyObject* kwds) 
 {
     Tw_Tile tile; 
@@ -571,6 +607,44 @@ static PyObject* Tilewe_NumPcCorners(PyObject* self, PyObject* args, PyObject* k
     return PyLong_FromLong(Tw_TileSet_Count(&Tw_RotPcInfos[Tw_ToRotPc(pc, Tw_Rot_N)].RelCorners)); 
 }
 
+static PyObject* Tilewe_PcTiles(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Pc pc; 
+    Tw_Rot rot; 
+    if (!PcRotArgHandler(args, kwds, true, &pc, &rot)) 
+    {
+        return NULL;
+    }
+
+    PyObject* list = PyList_New(0); 
+
+    Tw_TileSet_FOR_EACH(Tw_RotPcInfos[Tw_ToRotPc(pc, Tw_Rot_N)].Tiles, tile, 
+    {
+        PyList_Append(list, PyLong_FromLong((long) tile)); 
+    });
+
+    return list; 
+}
+
+static PyObject* Tilewe_PcContacts(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Pc pc; 
+    Tw_Rot rot; 
+    if (!PcRotArgHandler(args, kwds, true, &pc, &rot)) 
+    {
+        return NULL;
+    }
+
+    PyObject* list = PyList_New(0); 
+
+    Tw_TileSet_FOR_EACH(Tw_RotPcInfos[Tw_ToRotPc(pc, Tw_Rot_N)].Contacts, tile, 
+    {
+        PyList_Append(list, PyLong_FromLong((long) tile)); 
+    });
+
+    return list; 
+}
+
 static PyObject* Tilewe_PlayRandomGame(PyObject* self, PyObject* args) 
 {
     Tw_Board board[1]; 
@@ -599,6 +673,8 @@ static PyMethodDef TileweMethods[] =
     { "n_piece_tiles", Tilewe_NumPcTiles, METH_VARARGS | METH_KEYWORDS, "Gets number of tiles in a piece" }, 
     { "n_piece_contacts", Tilewe_NumPcContacts, METH_VARARGS | METH_KEYWORDS, "Gets number of contacts in a piece" }, 
     { "n_piece_corners", Tilewe_NumPcCorners, METH_VARARGS | METH_KEYWORDS, "Gets number of corners in a piece" }, 
+    { "piece_tiles", Tilewe_PcTiles, METH_VARARGS | METH_KEYWORDS, "Gets tiles in a rotated piece" }, 
+    { "piece_contacts", Tilewe_PcContacts, METH_VARARGS | METH_KEYWORDS, "Gets contacts in a rotated piece" }, 
     { NULL, NULL, 0, NULL }
 };
 
