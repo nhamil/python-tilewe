@@ -17,6 +17,7 @@ class Engine:
         self.name = name  
         self.seconds = 0 
         self.end_at = time.time() 
+        self.estimated_elo = None
 
     def out_of_time(self) -> bool: 
         return time.time() >= self.end_at 
@@ -67,6 +68,7 @@ class RandomEngine(Engine):
 
     def __init__(self, name: str="Random"): 
         super().__init__(name)
+        self.estimated_elo = -100.0
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move: 
         return random.choice(board.generate_legal_moves()) 
@@ -81,6 +83,7 @@ class MostOpenCornersEngine(Engine):
 
     def __init__(self, name: str="MostOpenCorners"):
         super().__init__(name)
+        self.estimated_elo = 15.0
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
         moves = board.generate_legal_moves() 
@@ -108,6 +111,7 @@ class LargestPieceEngine(Engine):
 
     def __init__(self, name: str="LargestPiece"):
         super().__init__(name)
+        self.estimated_elo = 30.0
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
         moves = board.generate_legal_moves() 
@@ -133,6 +137,7 @@ class MaximizeMoveDifferenceEngine(Engine):
 
     def __init__(self, name: str="MaximizeMoveDifference"):
         super().__init__(name)
+        self.estimated_elo = 50.0
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
         moves = board.generate_legal_moves() 
