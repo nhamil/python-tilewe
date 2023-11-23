@@ -332,6 +332,10 @@ class Tournament:
                         player_scores = [scores[i] for i in game_players]
                         winner_names = [self.engines[i].name for i in winners]
                         
+                        player_elos = []
+                        delta_elos = []
+                        new_elos = []
+
                         # if there are enough players, compute elo changes
                         if board.n_players > 1:
                             player_elos = [elos[i] for i in game_players]
