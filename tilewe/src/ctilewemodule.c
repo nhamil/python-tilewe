@@ -366,24 +366,6 @@ static PyObject* Board_str(BoardObject* self, PyObject* Py_UNUSED(ignored))
     return PyUnicode_FromString(buf); 
 }
 
-static PyObject* Tilewe_PlayRandomGame(PyObject* self, PyObject* args) 
-{
-    Tw_Board board[1]; 
-    Tw_MoveList moves[1]; 
-    Tw_InitBoard(board, 4); 
-
-    while (!board->Finished) 
-    {
-        Tw_InitMoveList(moves); 
-        Tw_Board_GenMoves(board, moves); 
-        Tw_Board_Push(board, moves->Elements[rand() % moves->Count]); 
-    }
-
-    Tw_Board_Print(board); 
-
-    Py_RETURN_NONE; 
-}
-
 static PyGetSetDef Board_getsets[] = 
 {
     { "moves", Board_Moves, NULL, "Move history", NULL },
@@ -431,9 +413,69 @@ static PyTypeObject BoardType =
     .tp_methods = Board_methods
 };
 
+static bool TileArgHandler(PyObject* args, PyObject* kwds, Tw_Tile* tile) 
+{
+    static const char* kwlist[] = 
+    {
+        "tile", 
+        NULL
+    };
+
+    *tile = Tw_Tile_None; 
+
+    unsigned tileValue; 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "I", kwlist, &tileValue)) 
+    {
+        return false;
+    }
+
+    *tile = (Tw_Tile) tileValue; 
+
+    if (!Tw_Tile_InBounds(*tile)) 
+    {
+        PyErr_SetString(PyExc_AttributeError, "tile must be in bounds"); 
+        return false;
+    }
+
+    return true;
+}
+
+static PyObject* Tilewe_TileToCoords(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    Tw_Tile tile; 
+    if (!TileArgHandler(args, kwds, &tile)) 
+    {
+        return NULL;
+    }
+
+    int x, y; 
+    Tw_Tile_ToCoords(tile, &x, &y); 
+
+    return Py_BuildValue("ii", x, y); 
+}
+
+static PyObject* Tilewe_PlayRandomGame(PyObject* self, PyObject* args) 
+{
+    Tw_Board board[1]; 
+    Tw_MoveList moves[1]; 
+    Tw_InitBoard(board, 4); 
+
+    while (!board->Finished) 
+    {
+        Tw_InitMoveList(moves); 
+        Tw_Board_GenMoves(board, moves); 
+        Tw_Board_Push(board, moves->Elements[rand() % moves->Count]); 
+    }
+
+    Tw_Board_Print(board); 
+
+    Py_RETURN_NONE; 
+}
+
 static PyMethodDef TileweMethods[] = 
 {
     { "play_random_game", Tilewe_PlayRandomGame, METH_NOARGS, "Plays a random game" }, 
+    { "tile_to_coords", Tilewe_TileToCoords, METH_VARARGS | METH_KEYWORDS, "Get x,y coordinates of a tile" }, 
     { NULL, NULL, 0, NULL }
 };
 
