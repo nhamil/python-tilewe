@@ -30,7 +30,7 @@ class TestGameplay(unittest.TestCase):
 
         # assert that when no more moves can be played, all players have can_play() == False
         for i in range(board.n_players):
-            self.assertFalse(board.can_play(player=i))
+            self.assertFalse(board.can_play(for_player=i))
 
     def test_finished_game_state(self):
         random.seed(0)
@@ -39,7 +39,7 @@ class TestGameplay(unittest.TestCase):
         # play a game until the state is marked finished
         tracked_ply = 0
         while not board.finished:
-            board.push(random.choice(sorted(board.generate_legal_moves(), key=lambda m: str(m))))
+            board.push(random.choice(sorted(board.generate_legal_moves(), key=lambda m: tilewe.move_str(m))))
 
             # assert that the game finishes before 84 moves (i.e. no infinite loop)
             tracked_ply += 1
@@ -49,13 +49,10 @@ class TestGameplay(unittest.TestCase):
 
         for i in range(board.n_players):
             # assert that when the game is marked finished, no moves can be played
-            self.assertEqual(board.n_legal_moves(unique=True, for_player=i), 0)
-            self.assertEqual(board.generate_legal_moves(unique=True, for_player=i), [])
+            self.assertEqual(board.n_legal_moves(for_player=i), 0)
+            self.assertEqual(board.generate_legal_moves(for_player=i), [])
 
-            self.assertEqual(board.n_legal_moves(unique=False, for_player=i), 0)
-            self.assertEqual(board.generate_legal_moves(unique=False, for_player=i), [])
-
-            self.assertFalse(board.can_play(player=i))
+            self.assertFalse(board.can_play(for_player=i))
 
             # assert that when there are no moves, players have 0 open corners
             self.assertEqual(len(board.player_corners(i)), 0)
@@ -71,7 +68,7 @@ class TestGameplay(unittest.TestCase):
             'T4w-b2b14', 'Z4nf-a1n17', 'F5e-b3o10', 'L3n-b1f1', 'U5n-a2q17', 'Z5ef-a3o7', 'T5s-c1f4', 'I2e-a1g20', 
             'T5e-c3m8', 'L4nf-b3c3', 'L5wf-d1n19', 'N5w-a2n14', 'T4n-a2r12'
         ]
-        all_moves = [str(move) for move in board.moves]
+        all_moves = [tilewe.move_str(move) for move in board.moves]
 
         # assert that the expected game was played
         unexpected_game_msg = "Expected game not played, was generate_legal_moves() changed intentionally?"
