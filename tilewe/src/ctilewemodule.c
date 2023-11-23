@@ -650,7 +650,7 @@ static PyObject* Tilewe_PcTiles(PyObject* self, PyObject* args, PyObject* kwds)
 
     PyObject* list = PyList_New(0); 
 
-    Tw_TileSet_FOR_EACH(Tw_RotPcInfos[Tw_ToRotPc(pc, Tw_Rot_N)].Tiles, tile, 
+    Tw_TileSet_FOR_EACH(Tw_RotPcInfos[Tw_ToRotPc(pc, rot)].Tiles, tile, 
     {
         PyList_Append(list, PyLong_FromLong((long) tile)); 
     });
@@ -742,7 +742,7 @@ static PyObject* Tilewe_CreateMove(PyObject* self, PyObject* args, PyObject* kwd
     }
 
     Tw_Move move = Tw_MakeMove_Safe(pc, rot, con, tile); 
-    
+
     if (move == Tw_NoMove) 
     {
         Py_RETURN_NONE; 
