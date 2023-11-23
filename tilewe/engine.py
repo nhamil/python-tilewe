@@ -116,8 +116,8 @@ class LargestPieceEngine(Engine):
         def score(m: tilewe.Move): 
             pc = tilewe.move_piece(m) 
             return tilewe.n_piece_tiles(pc) * 100 + \
-                   tilewe.n_piece_corners(pc) * 10 + \
-                   tilewe.n_piece_contacts(pc) 
+                tilewe.n_piece_corners(pc) * 10 + \
+                tilewe.n_piece_contacts(pc) 
 
         best = max(moves, key=score)
         
