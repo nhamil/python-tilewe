@@ -413,7 +413,7 @@ static PyTypeObject BoardType =
     .tp_methods = Board_methods
 };
 
-static bool TileArgHandler(PyObject* args, PyObject* kwds, Tw_Tile* tile) 
+static bool TileArgHandler(PyObject* args, PyObject* kwds, bool checkBounds, Tw_Tile* tile) 
 {
     static const char* kwlist[] = 
     {
@@ -431,7 +431,7 @@ static bool TileArgHandler(PyObject* args, PyObject* kwds, Tw_Tile* tile)
 
     *tile = (Tw_Tile) tileValue; 
 
-    if (!Tw_Tile_InBounds(*tile)) 
+    if (checkBounds && !Tw_Tile_InBounds(*tile)) 
     {
         PyErr_SetString(PyExc_AttributeError, "tile must be in bounds"); 
         return false;
@@ -440,7 +440,7 @@ static bool TileArgHandler(PyObject* args, PyObject* kwds, Tw_Tile* tile)
     return true;
 }
 
-static bool CoordsArgHandler(PyObject* args, PyObject* kwds, int vals[2]) 
+static bool CoordsArgHandler(PyObject* args, PyObject* kwds, bool checkBounds, int vals[2]) 
 {
     static const char* kwlist[] = 
     {
@@ -455,7 +455,7 @@ static bool CoordsArgHandler(PyObject* args, PyObject* kwds, int vals[2])
         return false;
     }
 
-    if (!Tw_CoordsInBounds(vals[0], vals[1])) 
+    if (checkBounds && !Tw_CoordsInBounds(vals[0], vals[1])) 
     {
         PyErr_SetString(PyExc_AttributeError, "coords must be in bounds"); 
         return false;
@@ -467,7 +467,7 @@ static bool CoordsArgHandler(PyObject* args, PyObject* kwds, int vals[2])
 static PyObject* Tilewe_TileToCoords(PyObject* self, PyObject* args, PyObject* kwds) 
 {
     Tw_Tile tile; 
-    if (!TileArgHandler(args, kwds, &tile)) 
+    if (!TileArgHandler(args, kwds, true, &tile)) 
     {
         return NULL;
     }
@@ -478,15 +478,37 @@ static PyObject* Tilewe_TileToCoords(PyObject* self, PyObject* args, PyObject* k
     return Py_BuildValue("ii", x, y); 
 }
 
-static PyObject* Tilewe_CoordsToTile(PyObject* self, PyObject* args, PyObject* kwds) 
+static PyObject* Tilewe_TileInBounds(PyObject* self, PyObject* args, PyObject* kwds) 
 {
-    int vals[2]; 
-    if (!CoordsArgHandler(args, kwds, vals)) 
+    Tw_Tile tile; 
+    if (!TileArgHandler(args, kwds, false, &tile)) 
     {
         return NULL;
     }
-    
+
+    return PyBool_FromLong(Tw_Tile_InBounds(tile)); 
+}
+
+static PyObject* Tilewe_CoordsToTile(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    int vals[2]; 
+    if (!CoordsArgHandler(args, kwds, true, vals)) 
+    {
+        return NULL;
+    }
+
     return Py_BuildValue("i", Tw_MakeTile(vals[0], vals[1])); 
+}
+
+static PyObject* Tilewe_CoordsInBounds(PyObject* self, PyObject* args, PyObject* kwds) 
+{
+    int vals[2]; 
+    if (!CoordsArgHandler(args, kwds, false, vals)) 
+    {
+        return NULL;
+    }
+
+    return PyBool_FromLong(Tw_CoordsInBounds(vals[0], vals[1])); 
 }
 
 static PyObject* Tilewe_PlayRandomGame(PyObject* self, PyObject* args) 
@@ -511,7 +533,9 @@ static PyMethodDef TileweMethods[] =
 {
     { "play_random_game", Tilewe_PlayRandomGame, METH_NOARGS, "Plays a random game" }, 
     { "tile_to_coords", Tilewe_TileToCoords, METH_VARARGS | METH_KEYWORDS, "Get x,y coordinates of a tile" }, 
+    { "tile_in_bounds", Tilewe_TileInBounds, METH_VARARGS | METH_KEYWORDS, "Checks if tile is in bounds" }, 
     { "coords_to_tile", Tilewe_CoordsToTile, METH_VARARGS | METH_KEYWORDS, "Get tile from x,y coordinates" }, 
+    { "coords_in_bounds", Tilewe_CoordsInBounds, METH_VARARGS | METH_KEYWORDS, "Checks if coords are in bounds" }, 
     { NULL, NULL, 0, NULL }
 };
 
