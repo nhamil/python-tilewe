@@ -90,4 +90,15 @@ class Board:
     def player_corners(self, for_player: Color=None) -> list[tilewe.Tile]: 
         """Gets a list of the open corners for a player"""
         ...
+
+    def player_score(self, for_player: Color=None) -> int: 
+        """Gets the score of a player"""
+        ...
         
+    def can_play(self, for_player: Color=None) -> bool: 
+        """Whether a player has remaining moves"""
+        ...
+
+    def is_legal(self, move: tilewe.Move, for_player: Color=None) -> bool: 
+        """Whether a move is legal for a player"""
+        ...
