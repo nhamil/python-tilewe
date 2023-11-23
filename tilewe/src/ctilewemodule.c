@@ -209,6 +209,32 @@ static PyObject* Board_NumLegalMoves(BoardObject* self, PyObject* args, PyObject
     return PyLong_FromLong(Tw_Board_NumMovesForPlayer(&self->Board, (Tw_Color) player)); 
 }
 
+static PyObject* Board_PlayerPcs(BoardObject* self, PyObject* args, PyObject* kwds) 
+{
+    int player;
+    if (!ForPlayerArgHandler(self, args, kwds, &player))
+    {
+        return NULL;
+    }
+
+    // get a list of the player's pieces
+    Tw_PcList pcs;
+    Tw_InitPcList(&pcs);
+    Tw_Board_PlayerPcs(&self->Board, player, &pcs);
+
+    // build Python list of the pieces
+    PyObject* list = PyList_New(pcs.Count); 
+    for (int i = 0; i < pcs.Count; i++) {
+        PyList_SetItem(
+            list, 
+            i, 
+            PyLong_FromUnsignedLong((unsigned long) pcs.Elements[i])
+        ); 
+    }
+
+    return list; 
+}
+
 static PyObject* Board_NumPlayerPcs(BoardObject* self, PyObject* args, PyObject* kwds) 
 {
     int player;
@@ -311,6 +337,7 @@ static PyMethodDef Board_methods[] =
     { "color_at", Board_ColorAt, METH_VARARGS | METH_KEYWORDS, "Color that claimed the tile" }, 
     { "n_legal_moves", Board_NumLegalMoves, METH_VARARGS | METH_KEYWORDS, "Gets total number of legal moves for a player" }, 
     { "n_remaining_pieces", Board_NumPlayerPcs, METH_VARARGS | METH_KEYWORDS, "Gets total number of pieces remaining for a player" }, 
+    { "remaining_pieces", Board_PlayerPcs, METH_VARARGS | METH_KEYWORDS, "Gets a list of pieces remaining for a player" }, 
     { "n_player_corners", Board_NumPlayerCorners, METH_VARARGS | METH_KEYWORDS, "Gets total number of open corners for a player" }, 
     { "player_corners", Board_PlayerCorners, METH_VARARGS | METH_KEYWORDS, "Gets a list of the open corners for a player" }, 
     // { "copy", Board_Copy, METH_NOARGS, "Returns a clone of the current board state" }, 

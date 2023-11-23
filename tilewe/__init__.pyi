@@ -6,6 +6,19 @@ Rotation = int
 Color = int
 Move = int
 
+TILES: list[Tile] 
+PIECES: list[Piece] 
+ROTATIONS: list[Rotation] 
+COLOR: list[Color] 
+
+NO_PIECES: Piece 
+NO_COLOR: Color 
+
+TILE_NAMES: list[str] 
+PIECE_NAMES: list[str] 
+ROTATION_NAMES: list[str] 
+COLOR_NAMES: list[str] 
+
 class Board: 
 
     def __init__(self, n_players: int=4): 
@@ -64,6 +77,10 @@ class Board:
 
     def n_remaining_pieces(self, for_player: Color=None) -> int: 
         """Gets total number of pieces remaining for a player"""
+        ...
+
+    def remaining_pieces(self, for_player: Color=None) -> list[tilewe.Piece]: 
+        """Gets a list of pieces remaining for a player"""
         ...
 
     def n_player_corners(self, for_player: Color=None) -> int: 
