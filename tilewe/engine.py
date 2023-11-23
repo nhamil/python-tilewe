@@ -9,15 +9,21 @@ class Engine:
     Currently requires overriding the `on_search` function which must
     return one legal move within the given time control.
 
+    An Engine's self-estimated Elo should be relative to a 0-point scale,
+    not a 1500-point scale. For example, if you think your engine would
+    have a 50% win rate against an "average" opponent, you should leave it
+    at None/0.0. If you think your engine would have a 75% win rate against
+    an "average" opponent, you should set it to 200.0.
+
     For extension examples, see the Sample Engines below.
     For construction examples, see the tilewe.tournament.Tournament class.
     """
     
-    def __init__(self, name: str): 
+    def __init__(self, name: str, estimated_elo: float=None): 
         self.name = name  
+        self.estimated_elo = estimated_elo
         self.seconds = 0 
         self.end_at = time.time() 
-        self.estimated_elo = None
 
     def out_of_time(self) -> bool: 
         return time.time() >= self.end_at 
@@ -67,8 +73,7 @@ class RandomEngine(Engine):
     """
 
     def __init__(self, name: str="Random"): 
-        super().__init__(name)
-        self.estimated_elo = -100.0
+        super().__init__(name, -100.0)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move: 
         return random.choice(board.generate_legal_moves()) 
@@ -82,8 +87,7 @@ class MostOpenCornersEngine(Engine):
     """
 
     def __init__(self, name: str="MostOpenCorners"):
-        super().__init__(name)
-        self.estimated_elo = 15.0
+        super().__init__(name, 15.0)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
         moves = board.generate_legal_moves() 
@@ -110,8 +114,7 @@ class LargestPieceEngine(Engine):
     """
 
     def __init__(self, name: str="LargestPiece"):
-        super().__init__(name)
-        self.estimated_elo = 30.0
+        super().__init__(name, 30.0)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
         moves = board.generate_legal_moves() 
@@ -136,8 +139,7 @@ class MaximizeMoveDifferenceEngine(Engine):
     """
 
     def __init__(self, name: str="MaximizeMoveDifference"):
-        super().__init__(name)
-        self.estimated_elo = 50.0
+        super().__init__(name, 50.0)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
         moves = board.generate_legal_moves() 
