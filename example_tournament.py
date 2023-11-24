@@ -6,12 +6,14 @@ import tilewe.tournament
 
 def run_tournament():
     tournament = tilewe.tournament.Tournament([
-        tilewe.engine.MaximizeMoveDifferenceEngine(), 
-        tilewe.engine.LargestPieceEngine(), 
-        tilewe.engine.LargestPieceEngine("SmallestPiece", True), 
+        tilewe.engine.MoveDifferenceEngine("MaxMoveDiff", "max"), 
+        tilewe.engine.MoveDifferenceEngine("MinMoveDiff", "min"), 
+        tilewe.engine.PieceSizeEngine("LargestPiece", "max"), 
+        tilewe.engine.PieceSizeEngine("SmallestPiece", "min"), 
         tilewe.engine.TileWeightEngine("WallCrawler", 'wall_crawl'),
         tilewe.engine.TileWeightEngine("Turtle", 'turtle'),
-        tilewe.engine.MostOpenCornersEngine(), 
+        tilewe.engine.OpenCornersEngine("MostOpenCorners", "max"), 
+        tilewe.engine.OpenCornersEngine("LeastOpenCorners", "min"), 
         tilewe.engine.RandomEngine(),
     ])
 

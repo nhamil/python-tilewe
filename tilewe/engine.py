@@ -78,7 +78,7 @@ class RandomEngine(Engine):
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move: 
         return random.choice(board.generate_legal_moves()) 
 
-class MostOpenCornersEngine(Engine): 
+class OpenCornersEngine(Engine): 
     """
     Plays the move that results in the player having the most
     playable corners possible afterwards, i.e. maximizing the
@@ -86,8 +86,14 @@ class MostOpenCornersEngine(Engine):
     Fairly weak but does result in decent board coverage behavior.
     """
 
-    def __init__(self, name: str="MostOpenCorners", estimated_elo: float=None):
-        super().__init__(name, 15.0 if estimated_elo is None else estimated_elo)
+    def __init__(self, name: str="MostOpenCorners", style: str="max", estimated_elo: float=None):
+        if style not in ["max", "min"]:
+            raise ValueError("Invalid style, must be 'max' or 'min'")
+        if estimated_elo is None:
+            estimated_elo = -120.0 if style == "min" else 15.0
+        self.func = min if style == "min" else max
+        
+        super().__init__(name, estimated_elo)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
         moves = board.generate_legal_moves() 
@@ -100,9 +106,9 @@ class MostOpenCornersEngine(Engine):
                 corners = board.n_player_corners(player) 
                 return corners
 
-        return max(moves, key=corners_after_move)
+        return self.func(moves, key=corners_after_move)
 
-class LargestPieceEngine(Engine): 
+class PieceSizeEngine(Engine): 
     """
     Plays the best legal move prioritizing the following, in order:
         Piece with the most squares (i.e. most points)
@@ -110,15 +116,17 @@ class LargestPieceEngine(Engine):
         Piece that has the most contacts
     Moderately strong from a greedy point hungry perspective. Since
     ties are common and result in a random move choice across the
-    ties, it's effectively a greedy form of RandomEngine. With the
-    inverse argument set, it becomes a SmallestPieceEngine.
+    ties, it's effectively a greedy form of RandomEngine.
     """
 
-    def __init__(self, name: str="LargestPiece", inverse: bool=False, estimated_elo: float=None):
+    def __init__(self, name: str="LargestPiece", style: str="max", estimated_elo: float=None):
+        if style not in ["max", "min"]:
+            raise ValueError("Invalid style, must be 'max' or 'min'")
         if estimated_elo is None:
-            estimated_elo = -120.0 if inverse else 30.0
+            estimated_elo = -120.0 if style == "min" else 30.0
+        self.func = min if style == "min" else max
+        
         super().__init__(name, estimated_elo)
-        self.mult = -1 if inverse else 1
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
         moves = board.generate_legal_moves() 
@@ -126,15 +134,15 @@ class LargestPieceEngine(Engine):
 
         def score(m: tilewe.Move): 
             pc = tilewe.move_piece(m) 
-            return self.mult * (tilewe.PIECE_TILES[pc] * 100 + 
+            return (tilewe.PIECE_TILES[pc] * 100 + 
                 tilewe.PIECE_CORNERS[pc] * 10 + 
                 tilewe.PIECE_CONTACTS[pc])
 
-        best = max(moves, key=score)
+        best = self.func(moves, key=score)
         
         return best
 
-class MaximizeMoveDifferenceEngine(Engine): 
+class MoveDifferenceEngine(Engine): 
     """
     Plays the move that results in the player having the best difference 
     in subsequent legal move counts compared to all opponents. That is,
@@ -145,8 +153,14 @@ class MaximizeMoveDifferenceEngine(Engine):
     getting access to an open area on the board, etc.
     """
 
-    def __init__(self, name: str="MaximizeMoveDifference", estimated_elo: float=None):
-        super().__init__(name, 50.0 if estimated_elo is None else estimated_elo)
+    def __init__(self, name: str="MaxMoveDiff", style: str="max", estimated_elo: float=None):
+        if style not in ["max", "min"]:
+            raise ValueError("Invalid style, must be 'max' or 'min'")
+        if estimated_elo is None:
+            -100.0 if style == "min" else 50.0
+        self.func = min if style == "min" else max
+        
+        super().__init__(name, estimated_elo)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
         moves = board.generate_legal_moves() 
@@ -163,7 +177,7 @@ class MaximizeMoveDifferenceEngine(Engine):
                     total += n_moves * (1 if color == player else -1)
                 return total
 
-        return max(moves, key=eval_after_move)
+        return self.func(moves, key=eval_after_move)
     
 class TileWeightEngine(Engine):
     """
