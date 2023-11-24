@@ -3,6 +3,14 @@ import math
 _c_k = { 0: 1.0 } 
 
 def c_k(k: int) -> float: 
+    """
+    Computes a memoized c_k value, used for erfinv. 
+
+    References
+    ----------
+    https://en.wikipedia.org/wiki/Error_function#Inverse_functions
+    """
+
     if k < 0: 
         raise Exception("k cannot be less than 0") 
     if k in _c_k: 
@@ -16,6 +24,23 @@ def c_k(k: int) -> float:
     return total 
 
 def erfinv(x: float) -> float: 
+    """
+    Inverse error function. Only defined for -1 < x < 1. 
+
+    Parameters
+    ----------
+    x : float 
+        Desired output of (non-inverse) error function. 
+
+    Returns
+    -------
+    e_x : float
+        Input to the error function that results in an output of x
+
+    References
+    ----------
+    https://en.wikipedia.org/wiki/Error_function#Inverse_functions
+    """
     if x <= -1: 
         return math.nan 
     elif x >= 1: 
