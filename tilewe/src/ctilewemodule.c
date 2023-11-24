@@ -28,7 +28,7 @@ static int Move_init(MoveObject* self, PyObject* args, PyObject* kwds)
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "IIII", kwlist, &pc, &rot, &con, &tile)) 
     {
         PyErr_SetString(PyExc_AttributeError, "all parameters must be used"); 
-        return false;
+        return -1;
     }
 
     self->Move = Tw_MakeMove_Safe(pc, rot, con, tile); 
@@ -153,11 +153,10 @@ static PyObject* Board_Moves(BoardObject* self, void* closure)
 
     for (int i = 0; i < self->Board.Ply; i++) 
     {
-        PyList_SetItem(
-            list, 
-            i, 
-            PyLong_FromUnsignedLong(self->Board.History[i].Move)
-        );
+        MoveObject* mv = PyObject_New(MoveObject, &MoveType); 
+        mv->Move = self->Board.History[i].Move; 
+
+        PyList_SetItem(list, i, mv); 
     }
 
     return list; 

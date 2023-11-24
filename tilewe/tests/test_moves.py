@@ -7,28 +7,28 @@ class TestMoves(unittest.TestCase):
     def test_unique_legal_move(self): 
         board = tilewe.Board(4) 
 
-        self.assertTrue(board.is_legal(tilewe.create_move(
+        self.assertTrue(board.is_legal(tilewe.Move(
             piece=tilewe.Z5, 
             rotation=tilewe.NORTH, 
             contact=tilewe.A03, 
             to_tile=tilewe.A20
         )))
 
-        self.assertTrue(board.is_legal(tilewe.create_move(
+        self.assertTrue(board.is_legal(tilewe.Move(
             piece=tilewe.Z5, 
             rotation=tilewe.EAST, 
             contact=tilewe.A01, 
             to_tile=tilewe.A01
         )))
 
-        self.assertTrue(board.is_legal(tilewe.create_move(
+        self.assertTrue(board.is_legal(tilewe.Move(
             piece=tilewe.T4, 
             rotation=tilewe.NORTH, 
             contact=tilewe.A02, 
             to_tile=tilewe.A20
         )))
 
-        self.assertTrue(board.is_legal(tilewe.create_move(
+        self.assertTrue(board.is_legal(tilewe.Move(
             piece=tilewe.T4, 
             rotation=tilewe.EAST, 
             contact=tilewe.B03, 
@@ -39,7 +39,7 @@ class TestMoves(unittest.TestCase):
         board = tilewe.Board(4) 
 
         # contact is valid, but tiles would be placed off the board 
-        self.assertFalse(board.is_legal(tilewe.create_move(
+        self.assertFalse(board.is_legal(tilewe.Move(
             piece=tilewe.Z5, 
             rotation=tilewe.NORTH, 
             contact=tilewe.A03, 
@@ -47,7 +47,7 @@ class TestMoves(unittest.TestCase):
         )))
 
         # contact is not valid 
-        self.assertIsNone(tilewe.create_move(
+        self.assertRaises(AttributeError, lambda: tilewe.Move(
             piece=tilewe.Z5, 
             rotation=tilewe.NORTH, 
             contact=tilewe.A01, 
@@ -55,35 +55,35 @@ class TestMoves(unittest.TestCase):
         ))
 
         # contact is invalid, and tiles would be placed off the board
-        self.assertIsNone(tilewe.create_move(
+        self.assertRaises(AttributeError, lambda: tilewe.Move(
             piece=tilewe.T4, 
             rotation=tilewe.SOUTH, 
             contact=tilewe.C02, 
             to_tile=tilewe.A20
         ))
 
-        self.assertRaises(TypeError, lambda: tilewe.create_move(
+        self.assertRaises(AttributeError, lambda: tilewe.Move(
             piece=None, 
             rotation=tilewe.EAST, 
             contact=tilewe.B03, 
             to_tile=tilewe.T20
         ))
 
-        self.assertRaises(TypeError, lambda: tilewe.create_move(
+        self.assertRaises(AttributeError, lambda: tilewe.Move(
             piece=tilewe.T4, 
             rotation=None, 
             contact=tilewe.B03, 
             to_tile=tilewe.T20
         ))
 
-        self.assertRaises(TypeError, lambda: tilewe.create_move(
+        self.assertRaises(AttributeError, lambda: tilewe.Move(
             piece=tilewe.T4, 
             rotation=tilewe.EAST, 
             contact=None, 
             to_tile=tilewe.T20
         ))
 
-        self.assertRaises(TypeError, lambda: tilewe.create_move(
+        self.assertRaises(AttributeError, lambda: tilewe.Move(
             piece=tilewe.T4, 
             rotation=tilewe.EAST, 
             contact=tilewe.B03, 

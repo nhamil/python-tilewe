@@ -39,7 +39,7 @@ class TestGameplay(unittest.TestCase):
         # play a game until the state is marked finished
         tracked_ply = 0
         while not board.finished:
-            board.push(random.choice(sorted(board.generate_legal_moves(), key=lambda m: tilewe.move_str(m))))
+            board.push(random.choice(sorted(board.generate_legal_moves(), key=lambda m: str(m))))
 
             # assert that the game finishes before 84 moves (i.e. no infinite loop)
             tracked_ply += 1
@@ -68,7 +68,7 @@ class TestGameplay(unittest.TestCase):
             'T4w-b2b14', 'Z4nf-a1n17', 'F5e-b3o10', 'L3n-b1f1', 'U5n-a2q17', 'Z5ef-a3o7', 'T5s-c1f4', 'I2e-a1g20', 
             'T5e-c3m8', 'L4nf-b3c3', 'L5wf-d1n19', 'N5w-a2n14', 'T4n-a2r12'
         ]
-        all_moves = [tilewe.move_str(move) for move in board.moves]
+        all_moves = [str(move) for move in board.moves]
 
         # assert that the expected game was played
         unexpected_game_msg = "Expected game not played, was generate_legal_moves() changed intentionally?"
