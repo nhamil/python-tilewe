@@ -87,7 +87,7 @@ def compute_elo_adjustment_n(elos: list[float], scores: list[int], K: int = 32):
     
     player_count: int = len(elos)
     mod_K: float = K / (player_count - 1)
-    delta_elos: float = [0] * player_count
+    delta_elos: list[float] = [0] * player_count
     winning_score: int = max(scores)
 
     for player1 in range(player_count):
@@ -213,6 +213,9 @@ def compute_estimated_elo(n: int, ppg: list[list[int]], rpg: list[list[float]], 
     """
 
     def expected_elo(results: list[float]) -> float: 
+        if len(results) == 0: 
+            return math.nan
+
         wr = sum(results) / len(results) 
 
         if wr >= 1: 
