@@ -1,5 +1,66 @@
 import math
-from scipy.special import erfinv
+
+_c_k = { 0: 1.0 } 
+
+def c_k(k: int) -> float: 
+    """
+    Computes a memoized c_k value, used for erfinv. 
+
+    References
+    ----------
+    https://en.wikipedia.org/wiki/Error_function#Inverse_functions
+    """
+
+    if k < 0: 
+        raise Exception("k cannot be less than 0") 
+    if k in _c_k: 
+        return _c_k[k] 
+    
+    total = 0
+    for m in range(k): 
+        total += c_k(m) * c_k(k - 1 - m) / ((m + 1) * (2 * m + 1))
+
+    _c_k[k] = total 
+    return total 
+
+def erfinv(x: float) -> float: 
+    """
+    Inverse error function. Only defined for -1 < x < 1. 
+
+    Parameters
+    ----------
+    x : float 
+        Desired output of (non-inverse) error function. 
+
+    Returns
+    -------
+    e_x : float
+        Input to the error function that results in an output of x
+
+    References
+    ----------
+    https://en.wikipedia.org/wiki/Error_function#Inverse_functions
+    """
+    if x <= -1: 
+        return math.nan 
+    elif x >= 1: 
+        return math.nan 
+    
+    last = 0.0
+    out = 0.0 
+    k = 0
+    r_pi_2 = math.sqrt(math.pi) * 0.5
+
+    while True: 
+        out += c_k(k) / (2 * k + 1) * ((r_pi_2 * x) ** (2 * k + 1))
+
+        if abs(out - last) < 0.00001: 
+            break 
+
+        last = out 
+        k += 1
+
+    return out 
 
 def elo_win_probability(elo1: float, elo2: float, C: int=400):
     """
@@ -87,7 +148,7 @@ def compute_elo_adjustment_n(elos: list[float], scores: list[int], K: int = 32):
     
     player_count: int = len(elos)
     mod_K: float = K / (player_count - 1)
-    delta_elos: float = [0] * player_count
+    delta_elos: list[float] = [0] * player_count
     winning_score: int = max(scores)
 
     for player1 in range(player_count):
@@ -188,3 +249,71 @@ def compute_elo_error_margin(wins: int, draws: int, losses: int, confidence: flo
     max_log: float = -C * math.log10(max_recip - 1)
 
     return abs((max_log - min_log) / 2)
+
+def compute_estimated_elo(n: int, ppg: list[list[int]], rpg: list[list[float]], mean: float=0) -> list[float]: 
+    """
+    Computes Elo given a list of game players and results. Results should be: 
+    - 1 for a win
+    - 0 for a loss
+    - 1/2 for a draw
+
+    Parameters
+    ----------
+    n : int 
+        Total number of players 
+    ppg : list[list[int]] 
+        List of player indices for each game 
+    rpg : list[list[float]] 
+        List of player results for each game 
+    mean : float 
+        What the average rating should be
+
+    Returns
+    -------
+    Estimated Elo rating for all players 
+    """
+
+    def expected_elo(results: list[float]) -> float: 
+        if len(results) == 0: 
+            return math.nan
+
+        wr = sum(results) / len(results) 
+
+        if wr >= 1: 
+            return math.inf 
+        elif wr <= 0: 
+            return -math.inf 
+        else: 
+            # calculates total difference between the player and one virtual opponent
+            # the opponent will also have their elo adjusted so only return half of it
+            return -400 * math.log10(1.0 / wr - 1) / 2
+
+    elos = []
+    games = len(ppg)
+
+    # results per player 
+    rpp = [[] for _ in range(n)]
+
+    # game indices per player 
+    gpp = [[] for _ in range(n)]
+
+    for p in range(n): 
+        for g in range(games): 
+            if p in ppg[g]: 
+                # player played in game g
+                gpp[p].append(g) 
+                # player had result in game g
+                rpp[p].append(rpg[g][ppg[g].index(p)])
+
+    for p in range(n): 
+        # update elo 
+        elos.append(expected_elo(rpp[p]))
+
+    # adjust ratings to prevent drift
+    finite_e = [e for e in elos if math.isfinite(e)]
+    if len(finite_e): 
+        avg = sum(finite_e) / len(finite_e) 
+        for i in range(n): 
+            elos[i] += mean - avg
+
+    return elos 
