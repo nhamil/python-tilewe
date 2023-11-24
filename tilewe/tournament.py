@@ -169,7 +169,9 @@ class TournamentResults:
         len_names = max(5, min(24, max([len(x) for x in self.engine_names]) + 1))
         len_score = max(6, max([math.floor(math.log10(max(1, self.total_scores[i])) + 1) for i in range(N)]) + 1)
         len_games = max(7, max([math.floor(math.log10(max(1, self.game_counts[i])) + 1) for i in range(N)]) + 1)
-        len_elo = max(4, max([math.floor(math.log10(max(1, abs(self.elo_end[i]))) + 1) for i in range(N)]) + 1)
+        len_elo = max(4, max([math.floor(math.log10(max(1, abs(
+            self.elo_end[i] if math.isfinite(self.elo_end[i]) else 0
+        ))) + 1) for i in range(N)]) + 1)
 
         out = f"Ranking by {sort_by} {sort_dir}:\n"
         out += f"{'Rank':4} {'Name':{len_names}} {'Elo':^{len_elo + 9}} {'Score':>{len_score}} {'Avg Score':>10} "

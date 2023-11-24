@@ -1,5 +1,41 @@
 import math
-from scipy.special import erfinv
+
+_c_k = { 0: 1.0 } 
+
+def c_k(k: int) -> float: 
+    if k < 0: 
+        raise Exception("k cannot be less than 0") 
+    if k in _c_k: 
+        return _c_k[k] 
+    
+    total = 0
+    for m in range(k): 
+        total += c_k(m) * c_k(k - 1 - m) / ((m + 1) * (2 * m + 1))
+
+    _c_k[k] = total 
+    return total 
+
+def erfinv(x: float) -> float: 
+    if x <= -1: 
+        return math.nan 
+    elif x >= 1: 
+        return math.nan 
+    
+    last = 0.0
+    out = 0.0 
+    k = 0
+    r_pi_2 = math.sqrt(math.pi) * 0.5
+
+    while True: 
+        out += c_k(k) / (2 * k + 1) * ((r_pi_2 * x) ** (2 * k + 1))
+
+        if abs(out - last) < 0.00001: 
+            break 
+
+        last = out 
+        k += 1
+
+    return out 
 
 def elo_win_probability(elo1: float, elo2: float, C: int=400):
     """
