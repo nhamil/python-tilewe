@@ -71,6 +71,13 @@ static PyObject* Move_setstate(MoveObject* self, PyObject* state)
     Py_RETURN_NONE; 
 }
 
+static PyObject* Move_richcompare(MoveObject* self, PyObject* obj, int op); 
+
+static PyObject* Move_hash(MoveObject* self, PyObject* Py_UNUSED(ignored)) 
+{
+    return PyLong_FromUnsignedLong(self->Move); 
+}
+
 static PyObject* Move_str(MoveObject* self, PyObject* Py_UNUSED(ignored)) 
 {
     char buf[32]; 
@@ -132,9 +139,46 @@ static PyTypeObject MoveType =
     .tp_init = Move_init, 
     .tp_str = Move_str, 
     .tp_repr = Move_str, 
+    .tp_hash = Move_hash, 
+    .tp_richcompare = Move_richcompare, 
     .tp_methods = Move_methods, 
     .tp_getset = Move_getsets
 };
+
+static PyObject* Move_richcompare(MoveObject* self, PyObject* obj, int op) 
+{
+    if (!PyObject_TypeCheck(obj, &MoveType)) 
+    {
+        return PyBool_FromLong(false); 
+    }
+
+    PyObject* out = NULL; 
+
+    switch (op) 
+    {
+        case Py_LT: 
+            out = self->Move < ((MoveObject*) obj)->Move ? Py_True : Py_False; 
+            break; 
+        case Py_LE: 
+            out = self->Move <= ((MoveObject*) obj)->Move ? Py_True : Py_False; 
+            break; 
+        case Py_EQ: 
+            out = self->Move == ((MoveObject*) obj)->Move ? Py_True : Py_False; 
+            break; 
+        case Py_NE: 
+            out = self->Move != ((MoveObject*) obj)->Move ? Py_True : Py_False; 
+            break; 
+        case Py_GT: 
+            out = self->Move > ((MoveObject*) obj)->Move ? Py_True : Py_False; 
+            break; 
+        case Py_GE: 
+            out = self->Move >= ((MoveObject*) obj)->Move ? Py_True : Py_False; 
+            break; 
+    }
+
+    Py_XINCREF(out); 
+    return out; 
+}
 
 typedef struct BoardObject BoardObject; 
 
