@@ -7,7 +7,6 @@ Tile = int
 Piece = int 
 Rotation = int 
 Color = int
-Move = int
 
 TILES: list[Tile] 
 PIECES: list[Piece] 
@@ -49,36 +48,30 @@ def piece_tiles(piece: Piece, rotation: Rotation) -> list[Tile]:
 def piece_contacts(piece: Piece, rotation: Rotation) -> list[Tile]: 
     ...
 
-def create_move(piece: Piece, rotation: Rotation, contact: Tile, to_tile: Tile) -> Move: 
-    ...
+class Move: 
 
-def move_piece(move: Move) -> Piece: 
-    ...
+    def __init__(piece: Piece, rotation: Rotation, contact: Tile, to_tile: Tile): 
+        ...
 
-def move_rotation(move: Move) -> Rotation: 
-    ...
+    @property 
+    def piece(self) -> Piece: 
+        ...
 
-def move_contact(move: Move) -> Tile: 
-    ...
+    @property
+    def rotation(self) -> Rotation: 
+        ...
 
-def move_tile(move: Move) -> Tile: 
-    ...
+    @property
+    def contact(self) -> Tile: 
+        ...
 
-def move_str(move: Move) -> str: 
-    out = ""
-    out += PIECE_NAMES[move_piece(move)]
-    out += ROTATION_NAMES[move_rotation(move)]
-    out += "-"
-    out += TILE_NAMES[move_contact(move)]
-    out += TILE_NAMES[move_tile(move)]
-    return out 
+    @property 
+    def to_tile(self) -> Tile: 
+        ...
 
 class Board: 
 
     def __init__(self, n_players: int=4): 
-        ...
-
-    def __str__(self) -> str: 
         ...
 
     @property 
