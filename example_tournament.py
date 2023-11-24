@@ -26,9 +26,9 @@ def run_tournament():
     print(f"Tournament ran for {round(results.real_time, 4)}s with avg " + 
           f"match duration {round(results.average_match_duration, 4)}s\n")
 
-    # print the engine rankings sorted by win_counts desc and then by elo_error_margin desc
+    # print the engine rankings sorted by win_counts desc and then by elo_error_margin asc
     print(results.get_engine_rankings_display('win_counts', 'desc'))
-    print(results.get_engine_rankings_display('elo_error_margin', 'desc'))
+    print(results.get_engine_rankings_display('elo_error_margin', 'asc'))
 
 if __name__ == '__main__':
     run_tournament()
