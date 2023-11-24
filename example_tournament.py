@@ -16,8 +16,8 @@ def run_tournament():
         tilewe.engine.OpenCornersEngine("LeastOpenCorners", "min"), 
         tilewe.engine.RandomEngine(),
     ])
-
-    results = tournament.play(5000, n_threads=multiprocessing.cpu_count(), move_seconds=15)
+    
+    results = tournament.play(100, n_threads=multiprocessing.cpu_count(), move_seconds=1, elo_mode="estimated")
 
     # print the result of game 1
     print(results.match_data[0].board)
