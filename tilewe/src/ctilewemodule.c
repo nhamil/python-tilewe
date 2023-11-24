@@ -42,6 +42,35 @@ static int Move_init(MoveObject* self, PyObject* args, PyObject* kwds)
     return 0; 
 }
 
+static PyObject* Move_getstate(MoveObject* self, PyObject* Py_UNUSED(ignored)) 
+{
+    return Py_BuildValue("I", (unsigned) self->Move); 
+}
+
+static PyObject* Move_setstate(MoveObject* self, PyObject* state) 
+{
+    if (!PyLong_CheckExact(state)) 
+    {
+        PyErr_SetString(PyExc_ValueError, "Pickled object is not an int."); 
+        return NULL; 
+    }
+
+    Tw_Move move = (Tw_Move) PyLong_AsUnsignedLong(state); 
+
+    if (move == Tw_NoMove || move != Tw_MakeMove_Safe(
+        Tw_Move_Pc(move), 
+        Tw_Move_Rot(move), 
+        Tw_Move_Con(move), 
+        Tw_Move_ToTile(move)
+    )) 
+    {
+        PyErr_SetString(PyExc_ValueError, "Pickled object is not a valid move."); 
+        return NULL; 
+    }
+
+    Py_RETURN_NONE; 
+}
+
 static PyObject* Move_str(MoveObject* self, PyObject* Py_UNUSED(ignored)) 
 {
     char buf[32]; 
@@ -84,6 +113,13 @@ static PyGetSetDef Move_getsets[] =
     { NULL }
 };
 
+static PyMethodDef Move_methods[] = 
+{
+    { "__getstate__", Move_getstate, METH_NOARGS, "Pickle the move" }, 
+    { "__setstate__", Move_setstate, METH_O, "Un-pickle the move" }, 
+    { NULL }
+};
+
 static PyTypeObject MoveType = 
 {
     .ob_base = PyVarObject_HEAD_INIT(NULL, 0) 
@@ -96,6 +132,7 @@ static PyTypeObject MoveType =
     .tp_init = Move_init, 
     .tp_str = Move_str, 
     .tp_repr = Move_str, 
+    .tp_methods = Move_methods, 
     .tp_getset = Move_getsets
 };
 
