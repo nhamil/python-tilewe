@@ -1,5 +1,7 @@
+from typing import Callable
 import random
 import time
+import math
 
 import tilewe 
 
@@ -42,11 +44,14 @@ Sample Engines
 The following engines implement fairly simple strategies and can
 be used for testing your Engine against in tournaments.
 Approximate strength ordering:
-    WallCrawlerEngine, very weak
+    Min OpenCorners/MoveDiff/PieceSize, very very weak
     RandomEngine, very weak
+    TileWeightEngine with Turtle, very weak
+    TileWeightEngine with WallCrawl, weak
     MostOpenCornersEngine, weak
     LargestPieceEngine, moderate
     MaximizeMoveDifferenceEngine, surprisingly strong
+    SimpleSearchEngine, strong given a good eval function
 """
 
 class MoveExecutor(object):
@@ -303,3 +308,86 @@ class TileWeightEngine(Engine):
             moves = [i for i in moves if i.to_tile == corner]
 
         return max(moves, key=evaluate_move_weight)
+
+class SimpleSearchEngine(Engine): 
+    """
+    Plays the move that gives the best result given the board evaluation function.
+    Only searches a single ply deep and the eval function takes a board
+    and which player to evaluate positively for.
+    Strength depends entirely on the quality of the evaluation function!
+    """
+
+    def __init__(
+        self,
+        name: str=None,
+        eval_board: Callable[[tilewe.Board, tilewe.Color], float]=None,
+        estimated_elo: float=None,
+    ):
+        name = name or "SimpleSearch"
+
+        if eval_board is None:
+            estimated_elo = 75.0 if estimated_elo is None else estimated_elo
+            self.eval_function = self.default_eval
+        else:
+            estimated_elo = 0.0 if estimated_elo is None else estimated_elo
+            self.eval_function = eval_board
+        
+        super().__init__(name, estimated_elo)
+
+    def default_eval(self, board: tilewe.Board, player: tilewe.Color) -> float:
+        score = 0.0
+
+        # iterate the players to evaluate the state of the board
+        for color in range(0, board.n_players):
+            if color == player:
+                # bonus for score
+                score += board.scores[color] * 0.5
+
+                # bonus for playable corners
+                score += board.n_player_corners(color) * 0.2
+
+                # bonus for winning
+                if board.finished and color in board.winners:
+                    score += 1000
+
+                # penalty for losing early
+                if not board.finished and not board.can_play(for_player=color):
+                    score -= 1000
+            else:
+                # penalty for other players' scores
+                score -= board.scores[color] * 0.1
+                
+                # penalty for other players' playable corners
+                score -= board.n_player_corners(color) * 0.04
+
+                # bonus for other players losing early
+                if not board.finished and not board.can_play(for_player=color):
+                    score += 3
+
+        return score
+
+    def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
+        moves: list[tilewe.Move] = board.generate_legal_moves()
+        player: tilewe.Color = board.current_player
+        moves_evaluated: int = 0
+
+        best: float = -math.inf
+        best_move: tilewe.Move = random.choice(moves)
+
+        # check each legal move
+        for move in moves:
+            moves_evaluated += 1
+
+            # respect the time control
+            if moves_evaluated % 100 == 0 and self.out_of_time():
+                break
+
+            # evaluate the board state after the move
+            with MoveExecutor(board, move):
+                result: float = self.eval_function(board, player)
+
+                if result > best:
+                    best = result
+                    best_move = move
+
+        return best_move

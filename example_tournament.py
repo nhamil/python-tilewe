@@ -6,6 +6,7 @@ import tilewe.tournament
 
 def run_tournament():
     tournament = tilewe.tournament.Tournament([
+        tilewe.engine.SimpleSearchEngine(name="SimpleSearch"), 
         tilewe.engine.MoveDifferenceEngine(style="max"), 
         tilewe.engine.MoveDifferenceEngine(style="min"), 
         tilewe.engine.PieceSizeEngine(style="max"), 
