@@ -7,161 +7,6 @@ Tile = int
 Piece = int 
 Rotation = int 
 Color = int
-Move = int
-
-TILES: list[Tile] 
-PIECES: list[Piece] 
-ROTATIONS: list[Rotation] 
-COLOR: list[Color] 
-
-NO_PIECES: Piece 
-NO_COLOR: Color 
-
-TILE_NAMES: list[str] 
-PIECE_NAMES: list[str] 
-ROTATION_NAMES: list[str] 
-COLOR_NAMES: list[str] 
-
-def tile_to_coords(tile: Tile) -> tuple[int, int]: 
-    ...
-
-def tile_in_bounds(tile: Tile) -> bool: 
-    ...
-
-def coords_to_tile(coords: tuple[int, int]) -> Tile: 
-    ...
-
-def coords_in_bounds(coords: tuple[int, int]) -> bool: 
-    ...
-
-def n_piece_tiles(piece: Piece) -> int: 
-    ...
-
-def n_piece_contacts(piece: Piece) -> int: 
-    ...
-
-def n_piece_corners(piece: Piece) -> int: 
-    ...
-
-def piece_tiles(piece: Piece, rotation: Rotation) -> list[Tile]: 
-    ...
-
-def piece_contacts(piece: Piece, rotation: Rotation) -> list[Tile]: 
-    ...
-
-def create_move(piece: Piece, rotation: Rotation, contact: Tile, to_tile: Tile) -> Move: 
-    ...
-
-def move_piece(move: Move) -> Piece: 
-    ...
-
-def move_rotation(move: Move) -> Rotation: 
-    ...
-
-def move_contact(move: Move) -> Tile: 
-    ...
-
-def move_tile(move: Move) -> Tile: 
-    ...
-
-def move_str(move: Move) -> str: 
-    out = ""
-    out += PIECE_NAMES[move_piece(move)]
-    out += ROTATION_NAMES[move_rotation(move)]
-    out += "-"
-    out += TILE_NAMES[move_contact(move)]
-    out += TILE_NAMES[move_tile(move)]
-    return out 
-
-class Board: 
-
-    def __init__(self, n_players: int=4): 
-        ...
-
-    def __str__(self) -> str: 
-        ...
-
-    @property 
-    def ply(self) -> int: 
-        ...
-
-    @property 
-    def current_player(self) -> Color: 
-        """Color of the current player"""
-        ...
-
-    @property 
-    def cur_player(self) -> Color: 
-        """Color of the current player"""
-        ...
-
-    @property
-    def n_players(self) -> int: 
-        """Number of players"""
-        ...
-
-    @property 
-    def scores(self) -> list[int]: 
-        ...
-
-    @property
-    def winners(self) -> list[int]: 
-        ...
-
-    @property 
-    def finished(self) -> bool: 
-        """Whether the game is done"""
-        ...
-
-    def generate_legal_moves(self, for_player: Color=None) -> list[Move]: 
-        """Generates moves"""
-        ... 
-
-    def push(self, move: Move) -> None: 
-        """Play a move"""
-        ...
-
-    def pop(self) -> None: 
-        """Undo a move"""
-        ...
-
-    def n_legal_moves(self, for_player: Color=None) -> int: 
-        """Gets total number of legal moves for a player"""
-        ...
-
-    def n_remaining_pieces(self, for_player: Color=None) -> int: 
-        """Gets total number of pieces remaining for a player"""
-        ...
-
-    def remaining_pieces(self, for_player: Color=None) -> list[Piece]: 
-        """Gets a list of pieces remaining for a player"""
-        ...
-
-    def n_player_corners(self, for_player: Color=None) -> int: 
-        """Gets total number of open corners for a player"""
-        ...
-
-    def player_corners(self, for_player: Color=None) -> list[Tile]: 
-        """Gets a list of the open corners for a player"""
-        ...
-
-    def player_score(self, for_player: Color=None) -> int: 
-        """Gets the score of a player"""
-        ...
-        
-    def can_play(self, for_player: Color=None) -> bool: 
-        """Whether a player has remaining moves"""
-        ...
-
-    def is_legal(self, move: Move, for_player: Color=None) -> bool: 
-        """Whether a move is legal for a player"""
-        ...
-
-Tile = int
-Piece = int 
-Rotation = int 
-Color = int
-Move = int
 
 # game details related constant declarations
 TILES = [
@@ -220,6 +65,8 @@ ROTATIONS = [
     NORTH, EAST, SOUTH, WEST, NORTH_F, EAST_F, SOUTH_F, WEST_F
 ] = [Rotation(x) for x in range(8)]
 
+ROTATION_COUNT: int = len(ROTATIONS)
+
 ROTATION_NAMES = [
     'n', 'e', 's', 'w', 'nf', 'ef', 'sf', 'wf'
 ]
@@ -228,7 +75,9 @@ COLORS = [
     BLUE, YELLOW, RED, GREEN
 ] = [Color(x) for x in range(4)]
 
-NO_COLOR: Color = len(COLORS) 
+NO_COLOR: Color = Color(len(COLORS))
+
+COLOR_COUNT: int = len(COLORS) 
 
 COLOR_NAMES = [
     'blue', 'yellow', 'red', 'green'
@@ -240,13 +89,170 @@ PIECES = [
     T5, U5, V5, W5, X5, Y5, Z5, 
 ] = [Piece(x) for x in range(21)]
 
-NO_PIECE: Piece = len(PIECES) 
+NO_PIECE: Piece = Piece(len(PIECES))
+
+PIECE_COUNT: int = len(PIECES)
 
 PIECE_NAMES = [
     "O1", "I2", "I3", "L3", "O4", "I4", "L4", 
     "Z4", "T4", "F5", "I5", "L5", "N5", "P5", 
     "T5", "U5", "V5", "W5", "X5", "Y5", "Z5", 
 ]
+
+def tile_to_coords(tile: Tile) -> tuple[int, int]: 
+    """Converts a valid tile to xy coordinates"""
+    ...
+
+def tile_in_bounds(tile: Tile) -> bool: 
+    """Checks if a tile value is valid"""
+    ...
+
+def coords_to_tile(coords: tuple[int, int]) -> Tile: 
+    """Converts valid xy coordinates to a tile"""
+    ...
+
+def coords_in_bounds(coords: tuple[int, int]) -> bool: 
+    """Checks if xy coordinates are valid"""
+    ...
+
+def n_piece_tiles(piece: Piece) -> int: 
+    """Returns number of tiles in a piece"""
+    ...
+
+def n_piece_contacts(piece: Piece) -> int: 
+    """Returns number of contacts in a piece"""
+    ...
+
+def n_piece_corners(piece: Piece) -> int: 
+    """Returns number of open corners a piece provides"""
+    ...
+
+def piece_tiles(piece: Piece, rotation: Rotation) -> list[Tile]: 
+    """
+    Returns piece tiles relative to a rotation, where A01 is the bottom-left
+    coordinate of that rotations's bounding box
+    """
+    ...
+
+def piece_contacts(piece: Piece, rotation: Rotation) -> list[Tile]: 
+    """
+    Returns piece contacts relative to a rotation, where A01 is the bottom-left
+    coordinate of that rotations's bounding box
+    """
+    ...
+
+class Move: 
+    """Represents a board move"""
+
+    def __init__(piece: Piece, rotation: Rotation, contact: Tile, to_tile: Tile): 
+        """Creates a move"""
+        ...
+
+    @property 
+    def piece(self) -> Piece: 
+        """Piece used by the move"""
+        ...
+
+    @property
+    def rotation(self) -> Rotation: 
+        """Rotation used by the move"""
+        ...
+
+    @property
+    def contact(self) -> Tile: 
+        """Contact used by the move"""
+        ...
+
+    @property 
+    def to_tile(self) -> Tile: 
+        """Tile that the move's contact will be placed at"""
+        ...
+
+class Board: 
+    """Represents a tilewe board"""
+
+    def __init__(self, n_players: int=4): 
+        """Creates a board"""
+        ...
+
+    @property 
+    def ply(self) -> int: 
+        """Current ply, where each move increments the ply"""
+        ...
+
+    @property 
+    def current_player(self) -> Color: 
+        """Color of the current player"""
+        ...
+
+    @property 
+    def cur_player(self) -> Color: 
+        """Color of the current player"""
+        ...
+
+    @property
+    def n_players(self) -> int: 
+        """Number of players"""
+        ...
+
+    @property 
+    def scores(self) -> list[int]: 
+        """List of each player's score"""
+        ...
+
+    @property
+    def winners(self) -> list[int]: 
+        """List of current winners"""
+        ...
+
+    @property 
+    def finished(self) -> bool: 
+        """Whether the game is done"""
+        ...
+
+    def generate_legal_moves(self, for_player: Color=None) -> list[Move]: 
+        """Generates moves"""
+        ... 
+
+    def push(self, move: Move) -> None: 
+        """Play a move"""
+        ...
+
+    def pop(self) -> None: 
+        """Undo a move"""
+        ...
+
+    def n_legal_moves(self, for_player: Color=None) -> int: 
+        """Gets total number of legal moves for a player"""
+        ...
+
+    def n_remaining_pieces(self, for_player: Color=None) -> int: 
+        """Gets total number of pieces remaining for a player"""
+        ...
+
+    def remaining_pieces(self, for_player: Color=None) -> list[Piece]: 
+        """Gets a list of pieces remaining for a player"""
+        ...
+
+    def n_player_corners(self, for_player: Color=None) -> int: 
+        """Gets total number of open corners for a player"""
+        ...
+
+    def player_corners(self, for_player: Color=None) -> list[Tile]: 
+        """Gets a list of the open corners for a player"""
+        ...
+
+    def player_score(self, for_player: Color=None) -> int: 
+        """Gets the score of a player"""
+        ...
+        
+    def can_play(self, for_player: Color=None) -> bool: 
+        """Whether a player has remaining moves"""
+        ...
+
+    def is_legal(self, move: Move, for_player: Color=None) -> bool: 
+        """Whether a move is legal for a player"""
+        ...
 
 from ctilewe import *  # noqa: E402, F401, F403
 

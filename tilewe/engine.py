@@ -135,7 +135,7 @@ class PieceSizeEngine(Engine):
         random.shuffle(moves) 
 
         def score(m: tilewe.Move): 
-            pc = tilewe.move_piece(m) 
+            pc = m.piece
             return (tilewe.PIECE_TILES[pc] * 100 + 
                 tilewe.PIECE_CORNERS[pc] * 10 + 
                 tilewe.PIECE_CONTACTS[pc])
@@ -288,8 +288,8 @@ class TileWeightEngine(Engine):
         def evaluate_move_weight(move: tilewe.Move) -> float: 
             total: float = 0
 
-            offset = tilewe.move_tile(move) - tilewe.move_contact(move) 
-            for tile in tilewe.piece_tiles(tilewe.move_piece(move), tilewe.move_rotation(move)): 
+            offset = move.to_tile - move.contact 
+            for tile in tilewe.piece_tiles(move.piece, move.rotation): 
                 total += self.weights[tile + offset]
 
             return total
@@ -300,6 +300,6 @@ class TileWeightEngine(Engine):
         if board.ply < board.n_players:
             #  prune to one corner to reduce moves to evaluate
             corner = board.player_corners(cur_player)[0]
-            moves = [i for i in moves if tilewe.move_tile(i) == corner]
+            moves = [i for i in moves if i.to_tile == corner]
 
         return max(moves, key=evaluate_move_weight)

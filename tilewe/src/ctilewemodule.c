@@ -5,6 +5,181 @@
 
 #include "Tilewe/Tilewe.h" 
 
+typedef struct MoveObject MoveObject; 
+
+struct MoveObject 
+{
+    PyObject_HEAD 
+    Tw_Move Move; 
+};
+
+static int Move_init(MoveObject* self, PyObject* args, PyObject* kwds) 
+{
+    static const char* kwlist[] = 
+    {
+        "piece", 
+        "rotation", 
+        "contact", 
+        "to_tile", 
+        NULL
+    };
+
+    unsigned pc, rot, con, tile; 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "IIII", kwlist, &pc, &rot, &con, &tile)) 
+    {
+        PyErr_SetString(PyExc_AttributeError, "all parameters must be used"); 
+        return -1;
+    }
+
+    self->Move = Tw_MakeMove_Safe(pc, rot, con, tile); 
+
+    if (self->Move == Tw_NoMove) 
+    {
+        PyErr_SetString(PyExc_AttributeError, "move must have a valid piece, rotation, contact, and tile combination"); 
+        return -1; 
+    }
+
+    return 0; 
+}
+
+static PyObject* Move_getstate(MoveObject* self, PyObject* Py_UNUSED(ignored)) 
+{
+    return Py_BuildValue("I", (unsigned) self->Move); 
+}
+
+static PyObject* Move_setstate(MoveObject* self, PyObject* state) 
+{
+    if (!PyLong_CheckExact(state)) 
+    {
+        PyErr_SetString(PyExc_ValueError, "Pickled object is not an int."); 
+        return NULL; 
+    }
+
+    Tw_Move move = (Tw_Move) PyLong_AsUnsignedLong(state); 
+
+    if (move == Tw_NoMove || move != Tw_MakeMove_Safe(
+        Tw_Move_Pc(move), 
+        Tw_Move_Rot(move), 
+        Tw_Move_Con(move), 
+        Tw_Move_ToTile(move)
+    )) 
+    {
+        PyErr_SetString(PyExc_ValueError, "Pickled object is not a valid move."); 
+        return NULL; 
+    }
+
+    Py_RETURN_NONE; 
+}
+
+static PyObject* Move_richcompare(MoveObject* self, PyObject* obj, int op); 
+
+static PyObject* Move_hash(MoveObject* self, PyObject* Py_UNUSED(ignored)) 
+{
+    return PyLong_FromUnsignedLong(self->Move); 
+}
+
+static PyObject* Move_str(MoveObject* self, PyObject* Py_UNUSED(ignored)) 
+{
+    char buf[32]; 
+    snprintf(buf, 32, "%s%s-%s%s", 
+        Tw_Pc_Str(Tw_Move_Pc(self->Move)), 
+        Tw_Rot_Str(Tw_Move_Rot(self->Move)), 
+        Tw_Tile_Str(Tw_Move_Con(self->Move)), 
+        Tw_Tile_Str(Tw_Move_ToTile(self->Move))
+    );
+
+    return PyUnicode_FromString(buf); 
+}
+
+static PyObject* Move_Piece(MoveObject* self, void* closure) 
+{
+    return PyLong_FromLong(Tw_Move_Pc(self->Move)); 
+}
+
+static PyObject* Move_Rotation(MoveObject* self, void* closure) 
+{
+    return PyLong_FromLong(Tw_Move_Rot(self->Move)); 
+}
+
+static PyObject* Move_Contact(MoveObject* self, void* closure) 
+{
+    return PyLong_FromLong(Tw_Move_Con(self->Move)); 
+}
+
+static PyObject* Move_Tile(MoveObject* self, void* closure) 
+{
+    return PyLong_FromLong(Tw_Move_ToTile(self->Move)); 
+}
+
+static PyGetSetDef Move_getsets[] = 
+{
+    { "piece", Move_Piece, NULL, "Gets the move piece", NULL },
+    { "rotation", Move_Rotation, NULL, "Gets the move rotation", NULL },
+    { "contact", Move_Contact, NULL, "Gets the move contact tile", NULL },
+    { "to_tile", Move_Tile, NULL, "Gets the move open corner", NULL },
+    { NULL }
+};
+
+static PyMethodDef Move_methods[] = 
+{
+    { "__getstate__", Move_getstate, METH_NOARGS, "Pickle the move" }, 
+    { "__setstate__", Move_setstate, METH_O, "Un-pickle the move" }, 
+    { NULL }
+};
+
+static PyTypeObject MoveType = 
+{
+    .ob_base = PyVarObject_HEAD_INIT(NULL, 0) 
+    .tp_name = "ctilewe.Move", 
+    .tp_doc = PyDoc_STR("Representation of a Move."), 
+    .tp_basicsize = sizeof(MoveObject), 
+    .tp_itemsize = 0, 
+    .tp_flags = Py_TPFLAGS_DEFAULT, 
+    .tp_new = PyType_GenericNew, 
+    .tp_init = Move_init, 
+    .tp_str = Move_str, 
+    .tp_repr = Move_str, 
+    .tp_hash = Move_hash, 
+    .tp_richcompare = Move_richcompare, 
+    .tp_methods = Move_methods, 
+    .tp_getset = Move_getsets
+};
+
+static PyObject* Move_richcompare(MoveObject* self, PyObject* obj, int op) 
+{
+    if (!PyObject_TypeCheck(obj, &MoveType)) 
+    {
+        return PyBool_FromLong(false); 
+    }
+
+    PyObject* out = NULL; 
+
+    switch (op) 
+    {
+        case Py_LT: 
+            out = self->Move < ((MoveObject*) obj)->Move ? Py_True : Py_False; 
+            break; 
+        case Py_LE: 
+            out = self->Move <= ((MoveObject*) obj)->Move ? Py_True : Py_False; 
+            break; 
+        case Py_EQ: 
+            out = self->Move == ((MoveObject*) obj)->Move ? Py_True : Py_False; 
+            break; 
+        case Py_NE: 
+            out = self->Move != ((MoveObject*) obj)->Move ? Py_True : Py_False; 
+            break; 
+        case Py_GT: 
+            out = self->Move > ((MoveObject*) obj)->Move ? Py_True : Py_False; 
+            break; 
+        case Py_GE: 
+            out = self->Move >= ((MoveObject*) obj)->Move ? Py_True : Py_False; 
+            break; 
+    }
+
+    Py_XINCREF(out); 
+    return out; 
+}
+
 typedef struct BoardObject BoardObject; 
 
 struct BoardObject 
@@ -59,11 +234,10 @@ static PyObject* Board_Moves(BoardObject* self, void* closure)
 
     for (int i = 0; i < self->Board.Ply; i++) 
     {
-        PyList_SetItem(
-            list, 
-            i, 
-            PyLong_FromUnsignedLong(self->Board.History[i].Move)
-        );
+        MoveObject* mv = PyObject_New(MoveObject, &MoveType); 
+        mv->Move = self->Board.History[i].Move; 
+
+        PyList_SetItem(list, i, mv); 
     }
 
     return list; 
@@ -119,11 +293,10 @@ static PyObject* Board_GenMoves(BoardObject* self, PyObject* Py_UNUSED(ignored))
 
     for (int i = 0; i < moves.Count; i++) 
     {
-        PyList_SetItem(
-            list, 
-            i, 
-            PyLong_FromUnsignedLong((unsigned long) moves.Elements[i])
-        ); 
+        MoveObject* mv = PyObject_New(MoveObject, &MoveType); 
+        mv->Move = moves.Elements[i]; 
+
+        PyList_SetItem(list, i, mv); 
     }
 
     return list; 
@@ -137,14 +310,20 @@ static PyObject* Board_Push(BoardObject* self, PyObject* args, PyObject* kwds)
         NULL
     };
 
-    unsigned long long move; 
+    MoveObject* move; 
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "L", kwlist, &move)) 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O", kwlist, &move)) 
     {
         return NULL; 
     }
 
-    Tw_Board_Push(&self->Board, (Tw_Move) move); 
+    if (!PyObject_TypeCheck(move, &MoveType)) 
+    {
+        PyErr_SetString(PyExc_AttributeError, "Must be a move"); 
+        return NULL; 
+    }
+
+    Tw_Board_Push(&self->Board, move->Move); 
 
     Py_RETURN_NONE; 
 }
@@ -199,7 +378,7 @@ static bool ForPlayerArgHandler(BoardObject* self, PyObject* args, PyObject* kwd
 }
 
 // TODO use better way that doesn't duplicate so much code 
-static bool ForPlayerAndMoveArgHandler(BoardObject* self, PyObject* args, PyObject* kwds, unsigned* move, int* player) 
+static bool ForPlayerAndMoveArgHandler(BoardObject* self, PyObject* args, PyObject* kwds, Tw_Move* move, int* player) 
 {
     static const char* kwlist[] = 
     {
@@ -208,14 +387,23 @@ static bool ForPlayerAndMoveArgHandler(BoardObject* self, PyObject* args, PyObje
         NULL
     };
 
+    MoveObject* moveObj; 
     *player = Tw_Color_None; 
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "I|i", kwlist, move, player)) 
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|i", kwlist, &moveObj, player)) 
     {
         *move = (unsigned) Tw_NoMove; 
         *player = -1; 
         return false;
     }
+
+    if (!PyObject_TypeCheck(moveObj, &MoveType)) 
+    {
+        PyErr_SetString(PyExc_AttributeError, "Must be a move"); 
+        return false; 
+    }
+
+    *move = moveObj->Move; 
 
     if (*player == Tw_Color_None) 
     {
@@ -343,13 +531,13 @@ static PyObject* Board_NumPlayerCorners(BoardObject* self, PyObject* args, PyObj
 static PyObject* Board_IsLegal(BoardObject* self, PyObject* args, PyObject* kwds) 
 {
     int player;
-    unsigned move; 
+    Tw_Move move; 
     if (!ForPlayerAndMoveArgHandler(self, args, kwds, &move, &player))
     {
         return NULL;
     }
 
-    return PyBool_FromLong(Tw_Board_IsLegalForPlayer(&self->Board, (Tw_Color) player, (Tw_Move) move)); 
+    return PyBool_FromLong(Tw_Board_IsLegalForPlayer(&self->Board, (Tw_Color) player, move)); 
 }
 
 static PyObject* Board_Pop(BoardObject* self, PyObject* Py_UNUSED(ignored)) 
@@ -783,11 +971,6 @@ static PyMethodDef TileweMethods[] =
     { "n_piece_corners", Tilewe_NumPcCorners, METH_VARARGS | METH_KEYWORDS, "Gets number of corners in a piece" }, 
     { "piece_tiles", Tilewe_PcTiles, METH_VARARGS | METH_KEYWORDS, "Gets tiles in a rotated piece" }, 
     { "piece_contacts", Tilewe_PcContacts, METH_VARARGS | METH_KEYWORDS, "Gets contacts in a rotated piece" }, 
-    { "move_piece", Tilewe_MovePc, METH_VARARGS | METH_KEYWORDS, "Gets the piece used in a move" }, 
-    { "move_rotation", Tilewe_MoveRot, METH_VARARGS | METH_KEYWORDS, "Gets the piece rotation used in a move" }, 
-    { "move_contact", Tilewe_MoveCon, METH_VARARGS | METH_KEYWORDS, "Gets the contact tile used in a move" }, 
-    { "move_tile", Tilewe_MoveTile, METH_VARARGS | METH_KEYWORDS, "Gets the open corner used in a move" }, 
-    { "create_move", Tilewe_CreateMove, METH_VARARGS | METH_KEYWORDS, "Creates a move from a piece, rotation, contact, and tile" }, 
     { NULL, NULL, 0, NULL }
 };
 
@@ -807,6 +990,7 @@ PyMODINIT_FUNC PyInit_ctilewe(void)
     PyObject* m; 
 
     if (PyType_Ready(&BoardType) < 0) return NULL; 
+    if (PyType_Ready(&MoveType) < 0) return NULL; 
 
     if (!(m = PyModule_Create(&TileweModule))) return NULL; 
 
@@ -814,6 +998,14 @@ PyMODINIT_FUNC PyInit_ctilewe(void)
     if (PyModule_AddObject(m, "Board", (PyObject*) &BoardType) < 0) 
     {
         Py_DECREF(&BoardType); 
+        Py_DECREF(m); 
+        return NULL; 
+    }
+
+    Py_INCREF(&MoveType); 
+    if (PyModule_AddObject(m, "Move", (PyObject*) &MoveType) < 0) 
+    {
+        Py_DECREF(&MoveType); 
         Py_DECREF(m); 
         return NULL; 
     }
