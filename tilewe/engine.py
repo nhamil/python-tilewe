@@ -250,29 +250,34 @@ class TileWeightEngine(Engine):
         'turtle': -40.0
     }
 
+    names = {
+        'wall_crawl': 'WallCrawler',
+        'turtle': 'Turtle'
+    }
+
     def __init__(self, 
-                 name: str="TileWeight", 
-                 weight_map: str='wall_crawl', 
+                 name: str=None, 
+                 style: str='wall_crawl', 
                  custom_weights: list[int | float]=None, 
                  estimated_elo: float=None): 
         """
-        Current `weight_map` built-in options are 'wall_crawl' and 'turtle'
+        Current `style` built-in options are 'wall_crawl' and 'turtle'
         Can optionally provide a custom set of weights instead
         """
-
-        est_elo: float = 0.0 if estimated_elo is None else estimated_elo
 
         if custom_weights is not None:
             if len(custom_weights) != 20 * 20:
                 raise Exception("TileWeightEngine custom_weights must be a list of exactly 400 values")
             self.weights = custom_weights
+            name = name or "CustomTileWeights"
+            est_elo: float = 0.0 if estimated_elo is None else estimated_elo
         
         else:
-            if weight_map not in self.weight_maps:
-                raise Exception("TileWeightEngine given invalid weight_map choice")
-            self.weights = self.weight_maps[weight_map]
-            if estimated_elo is None: 
-                est_elo = self.weight_elos[weight_map] 
+            if style not in self.weight_maps:
+                raise Exception("TileWeightEngine given invalid style choice")
+            self.weights = self.weight_maps[style]
+            name = name or self.names[style]
+            est_elo: float = self.weight_elos[style] if estimated_elo is None else estimated_elo
 
         super().__init__(name, estimated_elo=est_elo)
 

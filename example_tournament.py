@@ -10,13 +10,11 @@ def run_tournament():
         tilewe.engine.MoveDifferenceEngine(style="min"), 
         tilewe.engine.PieceSizeEngine(style="max"), 
         tilewe.engine.PieceSizeEngine(style="min"), 
-        tilewe.engine.TileWeightEngine("WallCrawler", 'wall_crawl'),
-        tilewe.engine.TileWeightEngine("Turtle", 'turtle'),
+        tilewe.engine.TileWeightEngine(style='wall_crawl'),
+        tilewe.engine.TileWeightEngine(style='turtle'),
         tilewe.engine.OpenCornersEngine(style="max"), 
         tilewe.engine.OpenCornersEngine(style="min"), 
-        tilewe.engine.RandomEngine("Random 1"),
-        tilewe.engine.RandomEngine("Random 2"),
-        tilewe.engine.RandomEngine("Random 3"),
+        tilewe.engine.RandomEngine(name="Random"),
     ])
     
     results = tournament.play(100, n_threads=multiprocessing.cpu_count(), move_seconds=1, elo_mode="estimated")
