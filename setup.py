@@ -18,7 +18,7 @@ ext_modules = [
 
 setup(
     name='tilewe', 
-    version='0.0.2', 
+    version='0.0.3', 
     packages=find_packages(), 
     ext_modules=ext_modules
 )

@@ -1,6 +1,6 @@
 [project]
 name = "tilewe"
-version = "0.0.2"
+version = "0.0.3"
 authors = [
   { name="Nicholas Hamilton", email="nh.contact.1@gmail.com" },
   { name="Michael Conard", email="michaelaconard314@gmail.com" },
