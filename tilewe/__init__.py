@@ -256,6 +256,6 @@ class Board:
 
 from ctilewe import *  # noqa: E402, F401, F403
 
-N_PIECE_TILES:    list[int] = [n_piece_tiles(piece)    for piece in range(NO_PIECE)]  # noqa: E241, E272
-N_PIECE_CORNERS:  list[int] = [n_piece_corners(piece)  for piece in range(NO_PIECE)]  # noqa: E241, E272
-N_PIECE_CONTACTS: list[int] = [n_piece_contacts(piece) for piece in range(NO_PIECE)]  # noqa: E241, E272
+N_PIECE_TILES:    list[int] = [n_piece_tiles(piece)    for piece in range(PIECE_COUNT)]  # noqa: E241, E272
+N_PIECE_CORNERS:  list[int] = [n_piece_corners(piece)  for piece in range(PIECE_COUNT)]  # noqa: E241, E272
+N_PIECE_CONTACTS: list[int] = [n_piece_contacts(piece) for piece in range(PIECE_COUNT)]  # noqa: E241, E272
