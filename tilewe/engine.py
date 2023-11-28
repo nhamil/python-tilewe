@@ -78,7 +78,7 @@ class RandomEngine(Engine):
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move: 
         return random.choice(board.generate_legal_moves()) 
 
-class MostOpenCornersEngine(Engine): 
+class OpenCornersEngine(Engine): 
     """
     Plays the move that results in the player having the most
     playable corners possible afterwards, i.e. maximizing the
@@ -86,8 +86,15 @@ class MostOpenCornersEngine(Engine):
     Fairly weak but does result in decent board coverage behavior.
     """
 
-    def __init__(self, name: str="MostOpenCorners", estimated_elo: float=None):
-        super().__init__(name, 15.0 if estimated_elo is None else estimated_elo)
+    def __init__(self, name: str=None, style: str="max", estimated_elo: float=None):
+        if style not in ["max", "min"]:
+            raise ValueError("Invalid style, must be 'max' or 'min'")
+
+        name = name or ("MostOpenCorners" if style == "max" else "LeastOpenCorners")
+        estimated_elo = (15.0 if style == "max" else -250.0) if estimated_elo is None else estimated_elo
+        self.func = min if style == "min" else max
+        
+        super().__init__(name, estimated_elo)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
         moves = board.generate_legal_moves() 
@@ -100,9 +107,9 @@ class MostOpenCornersEngine(Engine):
                 corners = board.n_player_corners(player) 
                 return corners
 
-        return max(moves, key=corners_after_move)
+        return self.func(moves, key=corners_after_move)
 
-class LargestPieceEngine(Engine): 
+class PieceSizeEngine(Engine): 
     """
     Plays the best legal move prioritizing the following, in order:
         Piece with the most squares (i.e. most points)
@@ -113,24 +120,31 @@ class LargestPieceEngine(Engine):
     ties, it's effectively a greedy form of RandomEngine.
     """
 
-    def __init__(self, name: str="LargestPiece", estimated_elo: float=None):
-        super().__init__(name, 30.0 if estimated_elo is None else estimated_elo)
+    def __init__(self, name: str=None, style: str="max", estimated_elo: float=None):
+        if style not in ["max", "min"]:
+            raise ValueError("Invalid style, must be 'max' or 'min'")
+
+        name = name or ("LargestPiece" if style == "max" else "SmallestPiece")
+        estimated_elo = (30.0 if style == "max" else -150.0) if estimated_elo is None else estimated_elo
+        self.func = min if style == "min" else max
+        
+        super().__init__(name, estimated_elo)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
         moves = board.generate_legal_moves() 
         random.shuffle(moves) 
 
         def score(m: tilewe.Move): 
-            pc = m.piece 
-            return tilewe.n_piece_tiles(pc) * 100 + \
-                tilewe.n_piece_corners(pc) * 10 + \
-                tilewe.n_piece_contacts(pc) 
+            pc = m.piece
+            return (tilewe.N_PIECE_TILES[pc] * 100 + 
+                tilewe.N_PIECE_CORNERS[pc] * 10 + 
+                tilewe.N_PIECE_CONTACTS[pc])
 
-        best = max(moves, key=score)
+        best = self.func(moves, key=score)
         
         return best
 
-class MaximizeMoveDifferenceEngine(Engine): 
+class MoveDifferenceEngine(Engine): 
     """
     Plays the move that results in the player having the best difference 
     in subsequent legal move counts compared to all opponents. That is,
@@ -141,8 +155,15 @@ class MaximizeMoveDifferenceEngine(Engine):
     getting access to an open area on the board, etc.
     """
 
-    def __init__(self, name: str="MaximizeMoveDifference", estimated_elo: float=None):
-        super().__init__(name, 50.0 if estimated_elo is None else estimated_elo)
+    def __init__(self, name: str=None, style: str="max", estimated_elo: float=None):
+        if style not in ["max", "min"]:
+            raise ValueError("Invalid style, must be 'max' or 'min'")
+
+        name = name or ("MaxMoveDiff" if style == "max" else "MinMoveDiff")
+        estimated_elo = (50.0 if style == "max" else -200.0) if estimated_elo is None else estimated_elo
+        self.func = min if style == "min" else max
+        
+        super().__init__(name, estimated_elo)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
         moves = board.generate_legal_moves() 
@@ -159,7 +180,7 @@ class MaximizeMoveDifferenceEngine(Engine):
                     total += n_moves * (1 if color == player else -1)
                 return total
 
-        return max(moves, key=eval_after_move)
+        return self.func(moves, key=eval_after_move)
     
 class TileWeightEngine(Engine):
     """
@@ -229,29 +250,34 @@ class TileWeightEngine(Engine):
         'turtle': -40.0
     }
 
+    names = {
+        'wall_crawl': 'WallCrawler',
+        'turtle': 'Turtle'
+    }
+
     def __init__(self, 
-                 name: str="TileWeight", 
-                 weight_map: str='wall_crawl', 
+                 name: str=None, 
+                 style: str='wall_crawl', 
                  custom_weights: list[int | float]=None, 
                  estimated_elo: float=None): 
         """
-        Current `weight_map` built-in options are 'wall_crawl' and 'turtle'
+        Current `style` built-in options are 'wall_crawl' and 'turtle'
         Can optionally provide a custom set of weights instead
         """
-
-        est_elo: float = 0.0 if estimated_elo is None else estimated_elo
 
         if custom_weights is not None:
             if len(custom_weights) != 20 * 20:
                 raise Exception("TileWeightEngine custom_weights must be a list of exactly 400 values")
             self.weights = custom_weights
+            name = name or "CustomTileWeights"
+            est_elo: float = 0.0 if estimated_elo is None else estimated_elo
         
         else:
-            if weight_map not in self.weight_maps:
-                raise Exception("TileWeightEngine given invalid weight_map choice")
-            self.weights = self.weight_maps[weight_map]
-            if estimated_elo is None: 
-                est_elo = self.weight_elos[weight_map] 
+            if style not in self.weight_maps:
+                raise Exception("TileWeightEngine given invalid style choice")
+            self.weights = self.weight_maps[style]
+            name = name or self.names[style]
+            est_elo: float = self.weight_elos[style] if estimated_elo is None else estimated_elo
 
         super().__init__(name, estimated_elo=est_elo)
 
