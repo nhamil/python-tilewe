@@ -3,8 +3,15 @@ from setuptools import setup, find_packages, Extension
 ext_modules = [
     Extension(
         name="ctilewe", 
-        sources=["tilewe/src/ctilewemodule.c", "tilewe/src/tilewe/Source/Tilewe/Piece.c", "tilewe/src/tilewe/Source/Tilewe/Tables.c"], 
-        include_dirs=["tilewe/src/tilewe/Source", "tilewe/src/tilewe/Source/Tilewe"], 
+        sources=[
+            "tilewe/src/ctilewemodule.c", 
+            "tilewe/src/tilewe/Source/Tilewe/Piece.c", 
+            "tilewe/src/tilewe/Source/Tilewe/Tables.c"
+        ], 
+        include_dirs=[
+            "tilewe/src/tilewe/Source", 
+            "tilewe/src/tilewe/Source/Tilewe"
+        ], 
         extra_compile_args=["-O3", "-funroll-loops"]
     )   
 ]
