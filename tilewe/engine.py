@@ -91,7 +91,7 @@ class OpenCornersEngine(Engine):
             raise ValueError("Invalid style, must be 'max' or 'min'")
 
         name = name or ("MostOpenCorners" if style == "max" else "LeastOpenCorners")
-        estimated_elo = estimated_elo or (15.0 if style == "max" else -250.0)
+        estimated_elo = (15.0 if style == "max" else -250.0) if estimated_elo is None else estimated_elo
         self.func = min if style == "min" else max
         
         super().__init__(name, estimated_elo)
@@ -125,7 +125,7 @@ class PieceSizeEngine(Engine):
             raise ValueError("Invalid style, must be 'max' or 'min'")
 
         name = name or ("LargestPiece" if style == "max" else "SmallestPiece")
-        estimated_elo = estimated_elo or (30.0 if style == "max" else -150.0)
+        estimated_elo = (30.0 if style == "max" else -150.0) if estimated_elo is None else estimated_elo
         self.func = min if style == "min" else max
         
         super().__init__(name, estimated_elo)
@@ -160,7 +160,7 @@ class MoveDifferenceEngine(Engine):
             raise ValueError("Invalid style, must be 'max' or 'min'")
 
         name = name or ("MaxMoveDiff" if style == "max" else "MinMoveDiff")
-        estimated_elo = estimated_elo or (50.0 if style == "max" else -200.0)
+        estimated_elo = (50.0 if style == "max" else -200.0) if estimated_elo is None else estimated_elo
         self.func = min if style == "min" else max
         
         super().__init__(name, estimated_elo)
