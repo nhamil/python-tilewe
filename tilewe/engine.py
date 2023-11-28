@@ -136,9 +136,9 @@ class PieceSizeEngine(Engine):
 
         def score(m: tilewe.Move): 
             pc = m.piece
-            return (tilewe.PIECE_TILES[pc] * 100 + 
-                tilewe.PIECE_CORNERS[pc] * 10 + 
-                tilewe.PIECE_CONTACTS[pc])
+            return (tilewe.N_PIECE_TILES[pc] * 100 + 
+                tilewe.N_PIECE_CORNERS[pc] * 10 + 
+                tilewe.N_PIECE_CONTACTS[pc])
 
         best = self.func(moves, key=score)
         
