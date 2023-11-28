@@ -86,11 +86,12 @@ class OpenCornersEngine(Engine):
     Fairly weak but does result in decent board coverage behavior.
     """
 
-    def __init__(self, name: str="MostOpenCorners", style: str="max", estimated_elo: float=None):
+    def __init__(self, name: str=None, style: str="max", estimated_elo: float=None):
         if style not in ["max", "min"]:
             raise ValueError("Invalid style, must be 'max' or 'min'")
-        if estimated_elo is None:
-            estimated_elo = -250.0 if style == "min" else 15.0
+
+        name = name or ("MostOpenCorners" if style == "max" else "LeastOpenCorners")
+        estimated_elo = estimated_elo or (15.0 if style == "max" else -250.0)
         self.func = min if style == "min" else max
         
         super().__init__(name, estimated_elo)
@@ -119,11 +120,12 @@ class PieceSizeEngine(Engine):
     ties, it's effectively a greedy form of RandomEngine.
     """
 
-    def __init__(self, name: str="LargestPiece", style: str="max", estimated_elo: float=None):
+    def __init__(self, name: str=None, style: str="max", estimated_elo: float=None):
         if style not in ["max", "min"]:
             raise ValueError("Invalid style, must be 'max' or 'min'")
-        if estimated_elo is None:
-            estimated_elo = -150.0 if style == "min" else 30.0
+
+        name = name or ("LargestPiece" if style == "max" else "SmallestPiece")
+        estimated_elo = estimated_elo or (30.0 if style == "max" else -150.0)
         self.func = min if style == "min" else max
         
         super().__init__(name, estimated_elo)
@@ -156,8 +158,9 @@ class MoveDifferenceEngine(Engine):
     def __init__(self, name: str="MaxMoveDiff", style: str="max", estimated_elo: float=None):
         if style not in ["max", "min"]:
             raise ValueError("Invalid style, must be 'max' or 'min'")
-        if estimated_elo is None:
-            estimated_elo = -200.0 if style == "min" else 50.0
+
+        name = name or ("MaxMoveDiff" if style == "max" else "MinMoveDiff")
+        estimated_elo = estimated_elo or (50.0 if style == "max" else -200.0)
         self.func = min if style == "min" else max
         
         super().__init__(name, estimated_elo)
