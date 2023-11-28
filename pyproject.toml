@@ -1,6 +1,6 @@
 [project]
 name = "tilewe"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
   { name="Nicholas Hamilton", email="nh.contact.1@gmail.com" },
   { name="Michael Conard", email="michaelaconard314@gmail.com" },
@@ -16,3 +16,8 @@ classifiers = [
 
 [project.urls]
 "Github" = "https://github.com/nhamil/python-tilewe"
+"C Implementation" = "https://github.com/nhamil/tilewe"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta" 

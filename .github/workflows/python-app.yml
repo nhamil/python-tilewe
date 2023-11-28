@@ -16,6 +16,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
     - name: Set up Python 3.10
       uses: actions/setup-python@v3
       with:
@@ -28,7 +30,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
         # install the tilewe package locally
-        python -m pip install -e ./tilewe
+        python -m pip install .
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names

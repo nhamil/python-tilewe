@@ -9,12 +9,19 @@ class Engine:
     Currently requires overriding the `on_search` function which must
     return one legal move within the given time control.
 
+    An Engine's self-estimated Elo should be relative to a 0-point scale,
+    not a 1500-point scale. For example, if you think your engine would
+    have a 50% win rate against an "average" opponent, you should leave it
+    at None/0.0. If you think your engine would have a 75% win rate against
+    an "average" opponent, you should set it to 200.0.
+
     For extension examples, see the Sample Engines below.
     For construction examples, see the tilewe.tournament.Tournament class.
     """
     
-    def __init__(self, name: str): 
+    def __init__(self, name: str, estimated_elo: float=None): 
         self.name = name  
+        self.estimated_elo = estimated_elo
         self.seconds = 0 
         self.end_at = time.time() 
 
@@ -65,11 +72,11 @@ class RandomEngine(Engine):
     Pretty bad, but makes moves really fast.
     """
 
-    def __init__(self, name: str="Random"): 
-        super().__init__(name)
+    def __init__(self, name: str="Random", estimated_elo: float=None): 
+        super().__init__(name, -100.0 if estimated_elo is None else estimated_elo)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move: 
-        return random.choice(board.generate_legal_moves(unique=True)) 
+        return random.choice(board.generate_legal_moves()) 
 
 class MostOpenCornersEngine(Engine): 
     """
@@ -79,11 +86,11 @@ class MostOpenCornersEngine(Engine):
     Fairly weak but does result in decent board coverage behavior.
     """
 
-    def __init__(self, name: str="MostOpenCorners"):
-        super().__init__(name)
+    def __init__(self, name: str="MostOpenCorners", estimated_elo: float=None):
+        super().__init__(name, 15.0 if estimated_elo is None else estimated_elo)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
-        moves = board.generate_legal_moves(unique=True) 
+        moves = board.generate_legal_moves() 
         random.shuffle(moves) 
         
         player = board.current_player
@@ -106,17 +113,20 @@ class LargestPieceEngine(Engine):
     ties, it's effectively a greedy form of RandomEngine.
     """
 
-    def __init__(self, name: str="LargestPiece"):
-        super().__init__(name)
+    def __init__(self, name: str="LargestPiece", estimated_elo: float=None):
+        super().__init__(name, 30.0 if estimated_elo is None else estimated_elo)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
-        moves = board.generate_legal_moves(unique=True) 
+        moves = board.generate_legal_moves() 
         random.shuffle(moves) 
 
-        best = max(moves, key=lambda m:
-            tilewe.n_piece_tiles(m.piece) * 100 +
-            tilewe.n_piece_corners(m.piece) * 10 +
-            tilewe.n_piece_contacts(m.piece))
+        def score(m: tilewe.Move): 
+            pc = m.piece 
+            return tilewe.n_piece_tiles(pc) * 100 + \
+                tilewe.n_piece_corners(pc) * 10 + \
+                tilewe.n_piece_contacts(pc) 
+
+        best = max(moves, key=score)
         
         return best
 
@@ -131,20 +141,21 @@ class MaximizeMoveDifferenceEngine(Engine):
     getting access to an open area on the board, etc.
     """
 
-    def __init__(self, name: str="MaximizeMoveDifference"):
-        super().__init__(name)
+    def __init__(self, name: str="MaximizeMoveDifference", estimated_elo: float=None):
+        super().__init__(name, 50.0 if estimated_elo is None else estimated_elo)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move:
-        moves = board.generate_legal_moves(unique=True) 
+        moves = board.generate_legal_moves() 
         random.shuffle(moves) 
         
         player = board.current_player
+        N = board.n_players
 
         def eval_after_move(m: tilewe.Move) -> int: 
             with MoveExecutor(board, m):
                 total = 0
-                for color in range(board.n_players): 
-                    n_moves = board.n_legal_moves(unique=True, for_player=color)
+                for color in range(N): 
+                    n_moves = board.n_legal_moves(for_player=color)
                     total += n_moves * (1 if color == player else -1)
                 return total
 
@@ -213,13 +224,22 @@ class TileWeightEngine(Engine):
         'turtle': TURTLE_WEIGHTS
     }
 
-    def __init__(self, name: str="TileWeight", weight_map: str='wall_crawl', custom_weights: list[int | float]=None): 
+    weight_elos = {
+        'wall_crawl': -10.0,
+        'turtle': -40.0
+    }
+
+    def __init__(self, 
+                 name: str="TileWeight", 
+                 weight_map: str='wall_crawl', 
+                 custom_weights: list[int | float]=None, 
+                 estimated_elo: float=None): 
         """
         Current `weight_map` built-in options are 'wall_crawl' and 'turtle'
         Can optionally provide a custom set of weights instead
         """
 
-        super().__init__(name)
+        est_elo: float = 0.0 if estimated_elo is None else estimated_elo
 
         if custom_weights is not None:
             if len(custom_weights) != 20 * 20:
@@ -230,22 +250,25 @@ class TileWeightEngine(Engine):
             if weight_map not in self.weight_maps:
                 raise Exception("TileWeightEngine given invalid weight_map choice")
             self.weights = self.weight_maps[weight_map]
+            if estimated_elo is None: 
+                est_elo = self.weight_elos[weight_map] 
+
+        super().__init__(name, estimated_elo=est_elo)
 
     def on_search(self, board: tilewe.Board, _seconds: float) -> tilewe.Move: 
 
         cur_player = board.current_player
 
         def evaluate_move_weight(move: tilewe.Move) -> float: 
-            total: float = 0.0
+            total: float = 0
 
-            to_coords = tilewe.tile_to_coords(move.to_tile) 
-            for coords in tilewe.piece_tile_coords(move.piece, move.rotation, move.contact): 
-                coords = (coords[0] + to_coords[0], coords[1] + to_coords[1])
-                total += self.weights[tilewe.coords_to_tile(coords)]
+            offset = move.to_tile - move.contact 
+            for tile in tilewe.piece_tiles(move.piece, move.rotation): 
+                total += self.weights[tile + offset]
 
             return total
 
-        moves = board.generate_legal_moves(unique=True)
+        moves = board.generate_legal_moves()
         random.shuffle(moves)
 
         if board.ply < board.n_players:

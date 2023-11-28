@@ -9,7 +9,7 @@ import math
 
 import tilewe 
 from tilewe.engine import Engine
-from tilewe.elo import compute_elo_adjustment_n
+from tilewe.elo import compute_elo_adjustment_n, compute_elo_error_margin, compute_estimated_elo
 
 @dataclass
 class MatchData:
@@ -120,12 +120,34 @@ class TournamentResults:
         return [self.elo_end[i] - self.elo_start[i] for i in range(self.total_engines)]
 
     @property
+    def elo_error_margin(self) -> list[float]:
+        # with default 95% confidence and C=400
+        return [
+            compute_elo_error_margin(
+                self.win_counts[i], 
+                self.draw_counts[i], 
+                self.lose_counts[i]
+            ) for i in range(self.total_engines)
+        ]
+
+    @property
     def average_match_duration(self) -> float:
         return self.total_time / max(1, self.total_games)
     
     def get_matches_by_engine(self, engine: int) -> list[MatchData]:
+        # filter the matches for those involving this engine
         return [x for x in self.match_data if engine in x.engines]
-    
+
+    def get_elo_error_margin(self, engine: int, confidence: float=0.95, C: int=400) -> float:
+        # supports custom confidence and C values
+        return compute_elo_error_margin(
+            self.win_counts[engine], 
+            self.draw_counts[engine], 
+            self.lose_counts[engine],
+            max(0.001, min(0.999, confidence)),
+            max(1, C)
+        )
+
     def get_engine_rankings_display(self, sort_by: str = 'elo_end', sort_dir: str = 'desc') -> str:
         # verify the given sort property exists
         if not hasattr(self, sort_by):
@@ -147,10 +169,13 @@ class TournamentResults:
         len_names = max(5, min(24, max([len(x) for x in self.engine_names]) + 1))
         len_score = max(6, max([math.floor(math.log10(max(1, self.total_scores[i])) + 1) for i in range(N)]) + 1)
         len_games = max(7, max([math.floor(math.log10(max(1, self.game_counts[i])) + 1) for i in range(N)]) + 1)
+        len_elo = max(4, max([math.floor(math.log10(max(1, abs(
+            self.elo_end[i] if math.isfinite(self.elo_end[i]) else 0
+        ))) + 1) for i in range(N)]) + 1)
 
         out = f"Ranking by {sort_by} {sort_dir}:\n"
-        out += f"{'Rank':4} {'Name':{len_names}} {'Elo':>5} {'Score':>{len_score}} {'Avg Score':>10} {'Games':>{len_games}} "
-        out += f"{'Wins':>{len_games}} {'Draws':>{len_games}} {'Losses':>{len_games}} {'Win %':>7}\n"
+        out += f"{'Rank':4} {'Name':{len_names}} {'Elo':^{len_elo + 9}} {'Score':>{len_score}} {'Avg Score':>10} "
+        out += f"{'Games':>{len_games}} {'Wins':>{len_games}} {'Draws':>{len_games}} {'Losses':>{len_games}} {'Win Rate':>9}\n"
 
         dir = -1 if sort_dir == 'desc' else 1
 
@@ -158,11 +183,13 @@ class TournamentResults:
             name = self.engine_names[engine]
             draws, wins, games = self.draw_counts[engine], self.win_counts[engine], self.game_counts[engine]
             losses, score, elo = games - wins - draws, self.total_scores[engine], self.elo_end[engine]
+            elo_margin = compute_elo_error_margin(wins, draws, losses)
 
-            win_rate = f"{(wins / games * 100):>6.2f}%" if games > 0 else f"{'-':>7}"
+            win_rate = f"{(wins / games * 100):>8.2f}%" if games > 0 else f"{'-':>9}"
             avg_score = f"{(score / games):>10.2f}" if games > 0 else f"{'-':>10}"
+            elo_range = f"{elo:>{len_elo}.0f} +/- {elo_margin:<4.0f}"
 
-            out += f"{rank:>4d} {name:{len_names}.{len_names}} {elo:>5.0f} {score:>{len_score}d} {avg_score} "
+            out += f"{rank:>4d} {name:{len_names}.{len_names}} {elo_range} {score:>{len_score}d} {avg_score} "
             out += f"{games:>{len_games}d} {wins:>{len_games}d} {draws:>{len_games}d} {losses:>{len_games}d} {win_rate}\n"
 
         return out
@@ -207,15 +234,16 @@ class Tournament:
         self._seconds = move_seconds
         self.move_seconds = self._seconds
 
-    def play(
+    def play(  # noqa: C901
         self,
         n_games: int,
         n_threads: int=1,
         players_per_game: int=4,
         move_seconds: int=None,
         verbose_board: bool=False,
-        verbose_rankings: bool=True
-    ):
+        verbose_rankings: bool=True,
+        elo_mode: str="estimated",
+    ): 
         """
         Used to launch a series of games in an initialized Tournament.
 
@@ -233,6 +261,8 @@ class Tournament:
             Whether or not to print the final board state of each match
         verbose_rankings : bool=True
             Whether or not to print periodic ranking updates and the final rankings at the end
+        use_starting_elos : bool=False
+            Whether or not to initialize engines with their self proposed estimated Elo, otherwise 0
         """
 
         if n_games <= 0:
@@ -241,6 +271,8 @@ class Tournament:
             raise Exception("Must use at least one thread")
         if players_per_game < 1 or players_per_game > 4:
             raise Exception("Must have 1 to 4 players per game")
+        if elo_mode not in ["estimated", "live", "live_initial"]: 
+            raise Exception("Elo mode must be 'estimated', 'live', or 'live_initial'")
         
         self.move_seconds = move_seconds if move_seconds is not None else self._seconds
         if self.move_seconds <= 0:
@@ -249,34 +281,46 @@ class Tournament:
         # initialize trackers and game controls
         N = len(self.engines)
         total_games = 0
-        draws = [0 for _ in range(N)]
-        wins = [0 for _ in range(N)]
-        games = [0 for _ in range(N)]
-        elos = [0 for _ in range(N)]
-        totals = [0 for _ in range(N)]
+        draws = [0] * N
+        wins = [0] * N
+        games = [0] * N
+        totals = [0] * N
+        
+        if elo_mode == "live_initial":
+            elos = [0 if self.engines[i].estimated_elo is None else self.engines[i].estimated_elo for i in range(N)]
+        else:
+            elos = [0] * N
 
         initial_elos = [i for i in elos]
         match_results: list[MatchData] = []
+
+        player_inds_per_game: list[list[int]] = [] 
+        player_results_per_game: list[list[float]] = [] 
 
         # helper for getting engine rank summaries
         def get_engine_rankings() -> str:
             len_name = max(5, min(24, max([len(x.name) for x in self.engines]) + 1))
             len_score = max(6, max([math.floor(math.log10(max(1, totals[i])) + 1) for i in range(N)]) + 1)
             len_games = max(7, max([math.floor(math.log10(max(1, games[i])) + 1) for i in range(N)]) + 1)
+            len_elo = max(4, max([math.floor(
+                math.log10(max(1, abs(elos[i] if math.isfinite(elos[i]) else 0))) + 1
+            ) for i in range(N)]) + 1)
 
-            out = f"\n{'Rank':4} {'Name':{len_name}} {'Elo':>5} {'Score':>{len_score}} {'Avg Score':>10} "
+            out = f"\n{'Rank':4} {'Name':{len_name}} {'Elo':^{len_elo + 9}} {'Score':>{len_score}} {'Avg Score':>10} "
             out += f"{'Games':>{len_games}} {'Wins':>{len_games}} {'Draws':>{len_games}} "
-            out += f"{'Losses':>{len_games}} {'Win %':>7}\n"
+            out += f"{'Losses':>{len_games}} {'Win Rate':>9}\n"
 
             for rank, engine in enumerate(sorted(range(N), key=lambda x: -elos[x])):
                 name = self.engines[engine].name
                 draw_count, win_count, game_count = draws[engine], wins[engine], games[engine]
                 loss_count, score, elo = game_count - win_count - draw_count, totals[engine], elos[engine]
+                elo_margin = compute_elo_error_margin(win_count, draw_count, loss_count)
                 
-                win_rate = f"{(win_count / game_count * 100):>6.2f}%" if game_count > 0 else f"{'-':>7}"
+                win_rate = f"{(win_count / game_count * 100):>8.2f}%" if game_count > 0 else f"{'-':>9}"
                 avg_score = f"{(score / game_count):>10.2f}" if game_count > 0 else f"{'-':>10}"
+                elo_range = f"{elo:>{len_elo}.0f} +/- {elo_margin:<4.0f}"
 
-                out += f"{rank:>4d} {name:{len_name}.{len_name}} {elo:>5.0f} {score:>{len_score}d} "
+                out += f"{rank:>4d} {name:{len_name}.{len_name}} {elo_range} {score:>{len_score}d} "
                 out += f"{avg_score} {game_count:>{len_games}d} {win_count:>{len_games}d} "
                 out += f"{draw_count:>{len_games}d} {loss_count:>{len_games}d} {win_rate}\n"
 
@@ -300,9 +344,18 @@ class Tournament:
 
         with multiprocessing.Pool(n_threads, initializer=init_func, initargs=init_args) as pool: 
             try:
-                for winners, scores, board, player_to_engine, time_sec in pool.imap_unordered(self._play_game, args): 
+                for winners, scores, moves, player_to_engine, time_sec in pool.imap_unordered(self._play_game, args): 
+
+                    # re-build the board state from the moves
+                    board = tilewe.Board(len(player_to_engine))
+                    for move in moves: 
+                        board.push(move) 
+
                     # at least one player always wins, otherwise the game crashed 
                     if len(winners) > 0:
+                        player_inds_per_game.append(player_to_engine)
+                        results = [0] * len(player_to_engine)
+
                         # track games played
                         total_games += 1 
                         for p in player_to_engine:
@@ -311,9 +364,13 @@ class Tournament:
                         # track wins and draws
                         if len(winners) == 1:
                             wins[winners[0]] += 1
+                            results[player_to_engine.index(winners[0])] = 1
                         else:
                             for p in winners:
                                 draws[p] += 1 
+                                results[player_to_engine.index(p)] = 0.5
+
+                        player_results_per_game.append(results) 
 
                         # track scores and time
                         for p, s in enumerate(scores): 
@@ -325,14 +382,21 @@ class Tournament:
                         player_names = [self.engines[i].name for i in game_players]
                         player_scores = [scores[i] for i in game_players]
                         winner_names = [self.engines[i].name for i in winners]
-                        
-                        # if there are enough players, compute elo changes
+
+                        player_elos = [elos[i] for i in game_players]
                         if board.n_players > 1:
-                            player_elos = [elos[i] for i in game_players]
-                            delta_elos = compute_elo_adjustment_n(player_elos, player_scores, K=8)
-                            for index, player in enumerate(game_players):
-                                elos[player] += delta_elos[index]
-                            new_elos = [elos[i] for i in game_players]
+                            # if there are enough players, compute elo changes
+                            if elo_mode == "estimated": 
+                                est_elos = compute_estimated_elo(N, player_inds_per_game, player_results_per_game)
+                                delta_elos = [est_elos[i] - elos[i] for i in game_players]
+                                elos = est_elos 
+                            else: 
+                                delta_elos = compute_elo_adjustment_n(player_elos, player_scores, K=8)
+                                for index, player in enumerate(game_players):
+                                    elos[player] += delta_elos[index]
+                        else:
+                            delta_elos = [0 for _ in game_players]
+                        new_elos = [elos[i] for i in game_players]
 
                         # save match data
                         match_data = MatchData(
@@ -412,8 +476,15 @@ class Tournament:
         try: 
             engine_to_player = { value: key for key, value in enumerate(player_to_engine) }
             while not board.finished: 
-                engine = self.engines[player_to_engine[board.current_player]]
-                move = engine.search(board.copy_current_state(), self.move_seconds) 
+
+                # ghetto board copy to avoid exposing the real board to the engine
+                board_copy = tilewe.Board(n_players=len(player_to_engine))
+                for move in board.moves: 
+                    board_copy.push(move) 
+                engine = self.engines[player_to_engine[board_copy.current_player]]
+
+                move = engine.search(board_copy, self.move_seconds) 
+                # move = engine.search(board.copy_current_state(), self.move_seconds) 
                 # TODO test legality 
                 board.push(move) 
             end_time = time.time()
@@ -422,7 +493,7 @@ class Tournament:
             winners = [ player_to_engine[x] for x in board.winners ]
             scores = [ board.scores[engine_to_player[i]] if i in engine_to_player else 0 for i in range(len(self.engines)) ]
 
-            return winners, scores, board, player_to_engine, end_time - start_time
+            return winners, scores, board.moves, player_to_engine, end_time - start_time
         
         except BaseException: 
             traceback.print_exc()

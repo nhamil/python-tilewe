@@ -1,0 +1,3 @@
+[submodule "tilewe/src/tilewe"]
+	path = tilewe/src/tilewe
+	url = https://github.com/nhamil/tilewe
