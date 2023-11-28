@@ -155,7 +155,7 @@ class MoveDifferenceEngine(Engine):
     getting access to an open area on the board, etc.
     """
 
-    def __init__(self, name: str="MaxMoveDiff", style: str="max", estimated_elo: float=None):
+    def __init__(self, name: str=None, style: str="max", estimated_elo: float=None):
         if style not in ["max", "min"]:
             raise ValueError("Invalid style, must be 'max' or 'min'")
 
