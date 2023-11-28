@@ -100,60 +100,84 @@ PIECE_NAMES = [
 ]
 
 def tile_to_coords(tile: Tile) -> tuple[int, int]: 
+    """Converts a valid tile to xy coordinates"""
     ...
 
 def tile_in_bounds(tile: Tile) -> bool: 
+    """Checks if a tile value is valid"""
     ...
 
 def coords_to_tile(coords: tuple[int, int]) -> Tile: 
+    """Converts valid xy coordinates to a tile"""
     ...
 
 def coords_in_bounds(coords: tuple[int, int]) -> bool: 
+    """Checks if xy coordinates are valid"""
     ...
 
 def n_piece_tiles(piece: Piece) -> int: 
+    """Returns number of tiles in a piece"""
     ...
 
 def n_piece_contacts(piece: Piece) -> int: 
+    """Returns number of contacts in a piece"""
     ...
 
 def n_piece_corners(piece: Piece) -> int: 
+    """Returns number of open corners a piece provides"""
     ...
 
 def piece_tiles(piece: Piece, rotation: Rotation) -> list[Tile]: 
+    """
+    Returns piece tiles relative to a rotation, where A01 is the bottom-left
+    coordinate of that rotations's bounding box
+    """
     ...
 
 def piece_contacts(piece: Piece, rotation: Rotation) -> list[Tile]: 
+    """
+    Returns piece contacts relative to a rotation, where A01 is the bottom-left
+    coordinate of that rotations's bounding box
+    """
     ...
 
 class Move: 
+    """Represents a board move"""
 
     def __init__(piece: Piece, rotation: Rotation, contact: Tile, to_tile: Tile): 
+        """Creates a move"""
         ...
 
     @property 
     def piece(self) -> Piece: 
+        """Piece used by the move"""
         ...
 
     @property
     def rotation(self) -> Rotation: 
+        """Rotation used by the move"""
         ...
 
     @property
     def contact(self) -> Tile: 
+        """Contact used by the move"""
         ...
 
     @property 
     def to_tile(self) -> Tile: 
+        """Tile that the move's contact will be placed at"""
         ...
 
 class Board: 
+    """Represents a tilewe board"""
 
     def __init__(self, n_players: int=4): 
+        """Creates a board"""
         ...
 
     @property 
     def ply(self) -> int: 
+        """Current ply, where each move increments the ply"""
         ...
 
     @property 
@@ -173,10 +197,12 @@ class Board:
 
     @property 
     def scores(self) -> list[int]: 
+        """List of each player's score"""
         ...
 
     @property
     def winners(self) -> list[int]: 
+        """List of current winners"""
         ...
 
     @property 
